@@ -47,7 +47,8 @@ restriction will be lifted in the future.
 
 The **Safe owner addresses** are the wallets that are owners of the Gnosis Safe on which the Armor
 contract is a module. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
-threshold of 3 and the KMS wallets being different than the authorized trading address.
+threshold of 3 and the KMS wallets being different than the authorized trading address. Note the Python client
+supports Fireblocks raw signing so your owners could be (Fireblocks, Fireblocks, Ledger, KMS, KMS), for example.
 
 Each command below is annotated with the wallet that should be used to run the command. See the
 section above for how to configure different wallets via environment variables.
