@@ -13,22 +13,17 @@ This will create a virtual environment and install dependencies. Alternatively, 
 install dependencies from the `requirements.txt` file.
 
 ## Environment variables
-Set the refresh token for the Eulith API and the desired network:
+The Armor CLI requires some environment variables to be set.
 
 ```shell
 export EULITH_REFRESH_TOKEN=<...>
 export EULITH_NETWORK_TYPE=mainnet  # choices: mainnet, arb, goerli
-```
+export EULITH_AUTH_ADDRESS=0x123  # the authorized trading address (see below)
 
-If using a Ledger:
-
-```shell
+# If using a Ledger:
 export EULITH_WALLET_TYPE=ledger
-```
 
-If using KMS:
-
-```shell
+# If using KMS:
 export EULITH_WALLET_TYPE=kms
 export AWS_CREDENTIALS_PROFILE_NAME=<...>
 export EULITH_KMS_KEY=<...>  # the name of your key in KMS
@@ -70,21 +65,21 @@ Safe with 3 owners and a threshold of 2, run this command twice.
 
 ```shell
 # WALLET: Safe owner
-python armor.py sign-armor-as-owner --auth-address XYZ
+python armor.py sign-armor-as-owner
 ```
 
 Enable the Armor contract as a module on the Safe, using the owner addresses from the previous step.
 
 ```shell
 # WALLET: deployer
-python armor.py enable-armor --threshold X --owner-addresses A B C
+python armor.py enable-armor --threshold X --owner-addresses 0x001 0x002 0x003
 ```
 
 Next, create a draft client whitelist for trusted addresses.
 
 ```shell
 # WALLET: deployer
-python armor.py create-whitelist --addresses A B C
+python armor.py create-whitelist --addresses 0x001 0x002 0x003
 ```
 
 Repeat the signing process with a threshold of owners of the Safe to enable the whitelist.
