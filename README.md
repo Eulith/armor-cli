@@ -13,10 +13,11 @@ This will create a virtual environment and install dependencies. Alternatively, 
 install dependencies from the `requirements.txt` file.
 
 ## Environment variables
-Set the refresh token for the Eulith API:
+Set the refresh token for the Eulith API and the desired network:
 
 ```shell
 export EULITH_REFRESH_TOKEN=<...>
+export EULITH_NETWORK_TYPE=mainnet  # choices: mainnet, arb, goerli
 ```
 
 If using a Ledger:

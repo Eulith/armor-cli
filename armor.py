@@ -10,12 +10,15 @@ from eulith_web3.kms import KmsSigner
 from eulith_web3.ledger import LedgerSigner
 from eulith_web3.signing import construct_signing_middleware
 
-EULITH_URL = "https://eth-main.eulithrpc.com/v0"
-
 DUMMY_WALLET_TYPE = "dummy"
 KMS_WALLET_TYPE = "kms"
 LEDGER_WALLET_TYPE = "ledger"
 WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE]
+
+MAINNET_NETWORK_TYPE = "mainnet"
+ARBITRUM_NETWORK_TYPE = "arb"
+GOERLI_NETWORK_TYPE = "goerli"
+NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE]
 
 
 def deploy_armor(ew3, wallet, args):
@@ -160,14 +163,32 @@ def get_kms_wallet():
     return KmsSigner(client, formatted_key_name)
 
 
+def get_eulith_url(network_type):
+    if network_type == MAINNET_NETWORK_TYPE:
+        return "https://eth-main.eulithrpc.com/v0"
+    elif network_type == ARBITRUM_NETWORK_TYPE:
+        return "https://arb-main.eulithrpc.com/v0"
+    elif network_type == GOERLI_NETWORK_TYPE:
+        return "https://eth-goerli.eulithrpc.com/v0"
+    else:
+        bail(f"unsupported network type {network_type!r}")
+
+
 if __name__ == "__main__":
     env_token = os.environ.get("EULITH_REFRESH_TOKEN")
     env_wallet_type = os.environ.get("EULITH_WALLET_TYPE")
+    env_network_type = os.environ.get("EULITH_NETWORK_TYPE")
 
     if env_wallet_type and env_wallet_type not in WALLET_TYPES:
         wallet_types_string = ", ".join(WALLET_TYPES)
         bail(
             f"invalid wallet type {env_wallet_type!r}, expected one of: {wallet_types_string}"
+        )
+
+    if env_network_type and env_network_type not in NETWORK_TYPES:
+        network_types_string = ", ".join(NETWORK_TYPES)
+        bail(
+            f"invalid network type {env_network_type!r}, expected one of: {network_types_string}"
         )
 
     parser = argparse.ArgumentParser()
@@ -202,6 +223,21 @@ if __name__ == "__main__":
             required=True,
             choices=WALLET_TYPES,
             help="(defaults to EULITH_WALLET_TYPE)",
+        )
+
+    if env_network_type:
+        parser.add_argument(
+            "--network",
+            default=env_network_type,
+            choices=NETWORK_TYPES,
+            help="(defaults to EULITH_NETWORK_TYPE)",
+        )
+    else:
+        parser.add_argument(
+            "--network",
+            required=True,
+            choices=NETWORK_TYPES,
+            help="(defaults to EULITH_NETWORK_TYPE)",
         )
 
     subparsers = parser.add_subparsers(title="subcommands")
@@ -271,8 +307,9 @@ if __name__ == "__main__":
         else:
             bail(f"unsupported wallet type {args.wallet_type!r}")
 
+        eulith_url = get_eulith_url(args.network)
         ew3 = EulithWeb3(
-            eulith_url=EULITH_URL,
+            eulith_url=eulith_url,
             eulith_refresh_token=args.token,
             signing_middle_ware=construct_signing_middleware(wallet),
         )
