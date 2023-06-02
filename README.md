@@ -23,6 +23,9 @@ export EULITH_AUTH_ADDRESS=0x123  # the authorized trading address (see below)
 # If using a Ledger:
 export EULITH_WALLET_TYPE=ledger
 
+# If using a Trezor:
+export EULITH_WALLET_TYPE=trezor
+
 # If using KMS:
 export EULITH_WALLET_TYPE=kms
 export AWS_CREDENTIALS_PROFILE_NAME=<...>
