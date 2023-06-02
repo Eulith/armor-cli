@@ -9,11 +9,13 @@ from eulith_web3.eulith_web3 import EulithWeb3
 from eulith_web3.kms import KmsSigner
 from eulith_web3.ledger import LedgerSigner
 from eulith_web3.signing import construct_signing_middleware
+from eulith_web3.trezor import TrezorSigner
 
 DUMMY_WALLET_TYPE = "dummy"
 KMS_WALLET_TYPE = "kms"
 LEDGER_WALLET_TYPE = "ledger"
-WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE]
+TREZOR_WALLET_TYPE = "trezor"
+WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE, TREZOR_WALLET_TYPE]
 
 MAINNET_NETWORK_TYPE = "mainnet"
 ARBITRUM_NETWORK_TYPE = "arb"
@@ -31,8 +33,7 @@ def deploy_armor(ew3, wallet, auth_address, args):
         bail("operation aborted")
 
     armor_address, safe_address = ew3.v0.deploy_new_armor(
-        # TODO: Should take auth_address as a parameter.
-        ew3.to_checksum_address(wallet.address),
+        ew3.to_checksum_address(auth_address),
         {
             "from": wallet.address,
             "gas": args.gas,
@@ -80,7 +81,7 @@ def enable_armor(ew3, wallet, auth_address, args):
 
 
 def addresses(ew3, wallet, auth_address, args):
-    armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(wallet.address)
+    armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(auth_address)
     print(f"Armor address: {armor_address}")
     print(f"Safe address:  {safe_address}")
 
@@ -279,6 +280,10 @@ if __name__ == "__main__":
             wallet = LedgerSigner()
             print("Connected to Ledger")
             print()
+        elif wallet_type == TREZOR_WALLET_TYPE:
+            print("Connecting to Trezor")
+            wallet = TrezorSigner()
+            print("Connected to Trezor\n")
         else:
             bail(f"unsupported wallet type {wallet_type!r}")
 
