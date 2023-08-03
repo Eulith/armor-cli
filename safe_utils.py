@@ -95,7 +95,14 @@ def handle_execute_transfer(ew3, wallet, auth_address, args):
         erc = EulithERC20(ew3, token)
         print(f'Executing a transfer of {amount} {erc.symbol} ({erc.address}) from | SAFE: {safe} | ---> to {dest}')
         value = 0
-        tt = erc.transfer_float(dest, amount)
+
+        safe_bal_of_token = erc.balance_of_float(safe)
+        assert safe_bal_of_token >= amount
+
+        tt = erc.transfer_float(dest, amount, {
+            'gas': 200000,
+            'from': ew3.wallet_address
+        })
         data = bytearray.fromhex(tt.get('data')[2:])
         bal_before = erc.balance_of_float(dest)
         to = erc.address
