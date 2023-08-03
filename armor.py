@@ -8,19 +8,41 @@ import sys
 from eulith_web3.eulith_web3 import EulithWeb3
 from eulith_web3.kms import KmsSigner
 from eulith_web3.ledger import LedgerSigner
-from eulith_web3.signing import construct_signing_middleware
+from eulith_web3.signing import construct_signing_middleware, LocalSigner
 from eulith_web3.trezor import TrezorSigner
+
+from safe_utils import get_safe_balance, handle_start_transfer, handle_approve_hash, handle_execute_transfer
 
 DUMMY_WALLET_TYPE = "dummy"
 KMS_WALLET_TYPE = "kms"
 LEDGER_WALLET_TYPE = "ledger"
 TREZOR_WALLET_TYPE = "trezor"
-WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE, TREZOR_WALLET_TYPE]
+PLAIN_TEXT_WALLET_TYPE = "text"
+WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE, TREZOR_WALLET_TYPE, PLAIN_TEXT_WALLET_TYPE]
 
 MAINNET_NETWORK_TYPE = "mainnet"
 ARBITRUM_NETWORK_TYPE = "arb"
 GOERLI_NETWORK_TYPE = "goerli"
-NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE]
+POLY_NETWORK_TYPE = "poly"
+DEV_NETWORK_TYPE = "dev"
+NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE, POLY_NETWORK_TYPE, DEV_NETWORK_TYPE]
+
+
+def print_banner():
+    print(
+        """ 
+              ___           ___           ___                   ___           ___     
+             /\  \         /\__\         /\__\      ___        /\  \         /\__\    
+            /::\  \       /:/  /        /:/  /     /\  \       \:\  \       /:/  /    
+           /:/\:\  \     /:/  /        /:/  /      \:\  \       \:\  \     /:/__/     
+          /::\~\:\  \   /:/  /  ___   /:/  /       /::\__\      /::\  \   /::\  \ ___ 
+         /:/\:\ \:\__\ /:/__/  /\__\ /:/__/     __/:/\/__/     /:/\:\__\ /:/\:\  /\__\\
+         \:\~\:\ \/__/ \:\  \ /:/  / \:\  \    /\/:/  /       /:/  \/__/ \/__\:\/:/  /
+          \:\ \:\__\    \:\  /:/  /   \:\  \   \::/__/       /:/  /           \::/  / 
+           \:\ \/__/     \:\/:/  /     \:\  \   \:\__\       \/__/            /:/  /  
+            \:\__\        \::/  /       \:\__\   \/__/                       /:/  /   
+             \/__/         \/__/         \/__/                               \/__/    \n\n
+        """)
 
 
 def deploy_armor(ew3, wallet, auth_address, args):
@@ -132,26 +154,6 @@ def confirm(msg):
     return yesno.startswith("y")
 
 
-class DummyEw3:
-    def __getattr__(self, name):
-        if name == "v0":
-            return self
-        else:
-            return self.make_function(name)
-
-    def make_dummy_function(self, name):
-        def dummy_function(self, *args, **kwargs):
-            print(f"[DummyEw3] Calling function {name}")
-            return ["dummy address 1", "dummy address 2"]
-
-        return dummy_function
-
-
-class DummyWallet:
-    def __init__(self):
-        self.address = "dummy wallet address"
-
-
 def get_kms_wallet():
     import boto3
 
@@ -183,13 +185,17 @@ def get_eulith_url(network_type):
         return "https://arb-main.eulithrpc.com/v0"
     elif network_type == GOERLI_NETWORK_TYPE:
         return "https://eth-goerli.eulithrpc.com/v0"
+    elif network_type == POLY_NETWORK_TYPE:
+        return "https://poly-main.eulithrpc.com/v0"
+    elif network_type == DEV_NETWORK_TYPE:
+        return "http://localhost:7777/v0"
     else:
         bail(f"unsupported network type {network_type!r}")
 
 
 def validate_addresses(addresses):
     for address in addresses:
-        if not address.startswith("0x"):
+        if address and not address.startswith("0x"):
             bail(f"address must be a valid hex number starting with '0x': {address}")
 
 
@@ -247,10 +253,52 @@ if __name__ == "__main__":
     )
     parser_addresses.set_defaults(func=addresses)
 
+    parser_get_safe_balance = subparsers.add_parser(
+        "safe-balance",
+        help="Get a specified ERC20 balance of your safe"
+    )
+    parser_get_safe_balance.add_argument("--safe", type=str, help="the address of your safe", required=True)
+    parser_get_safe_balance.add_argument("--token", type=str, help="the address of the token", required=True)
+    parser_get_safe_balance.set_defaults(func=get_safe_balance)
+
+    parser_get_transfer_hash = subparsers.add_parser(
+        "start-safe-transfer",
+        help="Start a transfer (ERC20 tokens or native) from your safe to a specified wallet"
+    )
+    parser_get_transfer_hash.add_argument("--safe", type=str, help="the address of your safe", required=True)
+    parser_get_transfer_hash.add_argument("--token", type=str, help="the address of the token (use the null address for native)", required=True)
+    parser_get_transfer_hash.add_argument("--dest", type=str, help="the address of the destination", required=True)
+    parser_get_transfer_hash.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
+    parser_get_transfer_hash.set_defaults(func=handle_start_transfer)
+
+    parser_execute_safe_transfer = subparsers.add_parser(
+        "execute-safe-transfer",
+        help="Execute a transfer (ERC20 tokens or native) from your safe to a specified wallet"
+    )
+    parser_execute_safe_transfer.add_argument("--safe", type=str, help="the address of your safe", required=True)
+    parser_execute_safe_transfer.add_argument("--token", type=str,
+                                          help="the address of the token (use the null address for native)",
+                                          required=True)
+    parser_execute_safe_transfer.add_argument("--dest", type=str, help="the address of the destination", required=True)
+    parser_execute_safe_transfer.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
+    parser_execute_safe_transfer.add_argument("--owners", nargs='+', help="the owners you approved the transaction hash with",
+                                              required=True)
+    parser_execute_safe_transfer.set_defaults(func=handle_execute_transfer)
+
+    parser_approve_safe_hash = subparsers.add_parser(
+        "safe-approve-hash",
+        help="Approve tx hash for a Safe transaction"
+    )
+    parser_approve_safe_hash.add_argument("--safe", type=str, help="the address of your safe", required=True)
+    parser_approve_safe_hash.add_argument("--hash", type=str,
+                                          help="the hash of the tx you would like to approve",
+                                          required=True)
+    parser_approve_safe_hash.set_defaults(func=handle_approve_hash)
+
     args = parser.parse_args()
 
     refresh_token = getenv_or_bail("EULITH_REFRESH_TOKEN")
-    auth_address = getenv_or_bail("EULITH_AUTH_ADDRESS")
+    auth_address = os.environ.get("EULITH_AUTH_ADDRESS")
     validate_addresses([auth_address])
 
     network_type = getenv_or_bail("EULITH_NETWORK_TYPE")
@@ -260,37 +308,46 @@ if __name__ == "__main__":
             f"invalid network type {network_type!r}, expected one of: {network_types_string}"
         )
 
-    wallet_type = getenv_or_bail("EULITH_WALLET_TYPE")
-    if wallet_type not in WALLET_TYPES:
+    wallet_type = os.environ.get("EULITH_WALLET_TYPE")
+
+    if wallet_type and wallet_type not in WALLET_TYPES:
         wallet_types_string = ", ".join(WALLET_TYPES)
         bail(
             f"invalid wallet type {wallet_type!r}, expected one of: {wallet_types_string}"
         )
 
-    if wallet_type == DUMMY_WALLET_TYPE:
-        wallet = DummyWallet()
-        ew3 = DummyEw3()
+    eulith_url = get_eulith_url(network_type)
+
+    if wallet_type == KMS_WALLET_TYPE:
+        wallet = get_kms_wallet()
+    elif wallet_type == LEDGER_WALLET_TYPE:
+        print("Connecting to Ledger")
+        wallet = LedgerSigner()
+        print("Connected to Ledger")
+        print()
+    elif wallet_type == TREZOR_WALLET_TYPE:
+        print("Connecting to Trezor")
+        wallet = TrezorSigner()
+        print("Connected to Trezor\n")
+    elif wallet_type == PLAIN_TEXT_WALLET_TYPE:
+        private_key = getenv_or_bail("PRIVATE_KEY")
+        wallet = LocalSigner(private_key)
     else:
-        eulith_url = get_eulith_url(network_type)
+        wallet = LocalSigner('0000000000000000000000000000000000000000000000000000000000000000')
 
-        if wallet_type == KMS_WALLET_TYPE:
-            wallet = get_kms_wallet()
-        elif wallet_type == LEDGER_WALLET_TYPE:
-            print("Connecting to Ledger")
-            wallet = LedgerSigner()
-            print("Connected to Ledger")
-            print()
-        elif wallet_type == TREZOR_WALLET_TYPE:
-            print("Connecting to Trezor")
-            wallet = TrezorSigner()
-            print("Connected to Trezor\n")
-        else:
-            bail(f"unsupported wallet type {wallet_type!r}")
+    ew3 = EulithWeb3(
+        eulith_url=eulith_url,
+        eulith_refresh_token=refresh_token,
+        signing_middle_ware=construct_signing_middleware(wallet),
+    )
 
-        ew3 = EulithWeb3(
-            eulith_url=eulith_url,
-            eulith_refresh_token=refresh_token,
-            signing_middle_ware=construct_signing_middleware(wallet),
-        )
+    if network_type == POLY_NETWORK_TYPE:
+        from web3.middleware import geth_poa_middleware
+        ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    args.func(ew3, wallet, auth_address, args)
+    print_banner()
+
+    try:
+        args.func(ew3, wallet, auth_address, args)
+    except AttributeError:
+        print("Did not receive any commands. Try running ./run.sh -h for help")
