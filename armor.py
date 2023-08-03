@@ -74,6 +74,10 @@ def sign_armor_as_owner(ew3, wallet, auth_address, args):
         bail("failed to submit enable module signature")
 
 
+def show_wallet_address(ew3, wallet, auth_address, args):
+    print(f'Your connected wallet address is {ew3.wallet_address}')
+
+
 def enable_armor(ew3, wallet, auth_address, args):
     threshold = args.threshold
     owner_addresses = args.owner_addresses
@@ -294,6 +298,12 @@ if __name__ == "__main__":
                                           help="the hash of the tx you would like to approve",
                                           required=True)
     parser_approve_safe_hash.set_defaults(func=handle_approve_hash)
+
+    parser_approve_safe_hash = subparsers.add_parser(
+        "show-wallet",
+        help="Show the address of the connected wallet"
+    )
+    parser_approve_safe_hash.set_defaults(func=show_wallet_address)
 
     args = parser.parse_args()
 
