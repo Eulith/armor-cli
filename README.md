@@ -60,36 +60,36 @@ prices.
 
 ```shell
 # WALLET: deployer
-python armor.py deploy-armor
+./run.sh deploy-armor
 ```
 
 Next, sign the Armor contract with a threshold of owners of your new Safe. For instance, to set up a
 Safe with 3 owners and a threshold of 2, run this command twice.
 
 ```shell
-# WALLET: Safe owner
-python armor.py sign-armor-as-owner
+# WALLET: Safe ew3
+./run.sh sign-armor-as-ew3
 ```
 
 Enable the Armor contract as a module on the Safe, using the owner addresses from the previous step.
 
 ```shell
 # WALLET: deployer
-python armor.py enable-armor --threshold X --owner-addresses 0x001 0x002 0x003
+./run.sh enable-armor --threshold X --ew3-addresses 0x001 0x002 0x003
 ```
 
 Next, create a draft client whitelist for trusted addresses.
 
 ```shell
 # WALLET: deployer
-python armor.py create-whitelist --addresses 0x001 0x002 0x003
+./run.sh create-whitelist --addresses 0x001 0x002 0x003
 ```
 
 Repeat the signing process with a threshold of owners of the Safe to enable the whitelist.
 
 ```shell
-# WALLET: Safe owner
-python armor.py sign-whitelist --list-id XYZ
+# WALLET: Safe ew3
+./run.sh sign-whitelist --list-id XYZ
 ```
 
 Your DeFi Armor contract is now ready to use! The DeFi Armor security policy will be applied to any
@@ -124,23 +124,50 @@ ew3.v0.commit_atomic_transaction()
 
 The DeFi Armor policy is applied when the atomic transaction is committed.
 
-## Utility commands
+## Armor Utility commands
 View the addresses of the deployed Armor and Safe:
 
 ```shell
-python armor.py addresses
+./run.sh addresses
 ```
 
 View the current client whitelist:
 
 ```shell
-python armor.py get-whitelist
+./run.sh get-whitelist
 ```
 
 View the current draft client whitelist:
 
 ```shell
-python armor.py get-whitelist --draft
+./run.sh get-whitelist --draft
+```
+
+## Safe Utility Commands
+Armor can't work without its Safe. We have some basic utility commands to do basic transfers in and out
+of the safe with owner approval.
+
+View the Safe's balance of a given token
+```shell
+./run.sh safe-balance --token 0x... --safe 0x...
+```
+
+Start a transfer from the safe to a `dest` address. This will print out a hash that you need
+to approve with a threshold number of owners.
+```shell
+./run.sh start-safe-transfer --token 0x... --safe 0x... --dest 0x... --amount 0.1
+```
+
+Approve a Safe transaction hash with an owner. Note the owner that will be approving in this command is the
+connected wallet configured by the above environment variables.
+```shell
+./run.sh safe-approve-hash --safe 0x... --hash 0x...
+```
+
+Once you have approved a given hash with a sufficient number of owners, you can execute the transaction.
+Note that the owners passed here must line up with owners you approved the hash with.
+```shell
+./run.sh execute-safe-transfer --safe 0x... --token 0x... --dest 0x... --amount 0.1 --owners 0x... 0x... 
 ```
 
 # Troubleshooting
