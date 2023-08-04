@@ -1,6 +1,8 @@
 from typing import List
 
 import web3
+from web3.types import ChecksumAddress
+
 from eulith_web3.contract_bindings.safe.i_safe import ISafe
 from eulith_web3.erc20 import EulithERC20
 from eulith_web3.eulith_web3 import EulithWeb3
@@ -39,18 +41,18 @@ def approve_tx_hash(ew3: EulithWeb3, tx_hash: bytes, safe_addr: str) -> str:
 
 
 def get_safe_balance(ew3, wallet, auth_address, args):
-    token = ew3.to_checksum_address(args.token)
+    token = get_token_address(ew3, args.token)
     safe = ew3.to_checksum_address(args.safe)
 
     tc = EulithERC20(ew3, token)
     bal = tc.balance_of_float(safe)
 
-    print(f'\nYour safe has balance {bal} for token {tc.symbol} ({tc.address})\n')
+    print(f'\nYour safe has a balance of {bal} for token {tc.symbol} ({tc.address}).')
 
 
 def handle_start_transfer(ew3, wallet, auth_address, args):
     safe = ew3.to_checksum_address(args.safe)
-    token = ew3.to_checksum_address(args.token)
+    token = get_token_address(ew3, args.token)
     amount = args.amount
     dest = ew3.to_checksum_address(args.dest)
 
@@ -80,7 +82,7 @@ def handle_start_transfer(ew3, wallet, auth_address, args):
 
 def handle_execute_transfer(ew3, wallet, auth_address, args):
     safe = ew3.to_checksum_address(args.safe)
-    token = ew3.to_checksum_address(args.token)
+    token = get_token_address(ew3, args.token)
     amount = args.amount
     dest = ew3.to_checksum_address(args.dest)
     owners = args.owners
@@ -218,3 +220,9 @@ def execute_tx(ew3: EulithWeb3, safe_addr: str, to: str, value: int, data: bytes
 
     return r.hex()
 
+def get_token_address(ew3: EulithWeb3, token: str) -> ChecksumAddress:
+    if token.startswith("0x"):
+        return ew3.to_checksum_address(args.token)
+    else:
+        erc20 = ew3.eulith_get_erc_token(token)
+        return ew3.to_checksum_address(erc20.address)

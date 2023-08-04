@@ -262,7 +262,7 @@ if __name__ == "__main__":
         help="Get a specified ERC20 balance of your safe"
     )
     parser_get_safe_balance.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_get_safe_balance.add_argument("--token", type=str, help="the address of the token", required=True)
+    parser_get_safe_balance.add_argument("--token", type=str, help="the ticker symbol or address of the token", required=True)
     parser_get_safe_balance.set_defaults(func=get_safe_balance)
 
     parser_get_transfer_hash = subparsers.add_parser(
@@ -270,7 +270,7 @@ if __name__ == "__main__":
         help="Start a transfer (ERC20 tokens or native) from your safe to a specified wallet"
     )
     parser_get_transfer_hash.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_get_transfer_hash.add_argument("--token", type=str, help="the address of the token (use the null address for native)", required=True)
+    parser_get_transfer_hash.add_argument("--token", type=str, help="the ticker symbol or address of the token (use the null address for native)", required=True)
     parser_get_transfer_hash.add_argument("--dest", type=str, help="the address of the destination", required=True)
     parser_get_transfer_hash.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
     parser_get_transfer_hash.set_defaults(func=handle_start_transfer)
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     )
     parser_execute_safe_transfer.add_argument("--safe", type=str, help="the address of your safe", required=True)
     parser_execute_safe_transfer.add_argument("--token", type=str,
-                                          help="the address of the token (use the null address for native)",
+                                          help="the ticker symbol or address of the token (use the null address for native)",
                                           required=True)
     parser_execute_safe_transfer.add_argument("--dest", type=str, help="the address of the destination", required=True)
     parser_execute_safe_transfer.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
@@ -355,9 +355,8 @@ if __name__ == "__main__":
         from web3.middleware import geth_poa_middleware
         ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    print_banner()
-
     try:
         args.func(ew3, wallet, auth_address, args)
     except AttributeError:
+        print_banner()
         print("Did not receive any commands. Try running ./run.sh -h for help")
