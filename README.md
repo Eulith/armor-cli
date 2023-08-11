@@ -1,4 +1,4 @@
-This repository holds a command-line interface to Eulith's DeFi Armor product.
+This repository holds a command-line interface to setup Eulith's DeFi Armor product and trade on-chain with it.
 
 # Using the CLI
 ## Set-up
