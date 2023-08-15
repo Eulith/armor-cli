@@ -6,7 +6,9 @@ There are 3 steps to setting up the DeFi Armor product explained in this guide. 
 * Step 2: Understanding the relvant address roles and deploying the full product.
 * Step 3: Creating and approving the whitelist policy addresses.
 
-Once you're finished with the setup, you'll be able to trade protected by DeFi Armor.
+Once you're finished with the setup, you'll be able to trade protected by DeFi Armor. Will show you how to trade after the 3 Step setup.
+
+Before getting started, we recommend scrolling down to the **Troubleshooting** section at the bottom to glance at the, hopefully unlikely, but possible errors you can get and what to do about them.
 
 ## Set-up Step 1
 
@@ -120,13 +122,112 @@ Repeat the signing process with a threshold of owners of the Safe to enable the 
 ./run.sh sign-whitelist --list-id XYZ
 ```
 
-## Congrats! ##
+# Congrats, you're set up!
+
+## Let's test it with some trades.
 
 Your DeFi Armor is now ready to use! The DeFi Armor security policy will be applied to any
-atomic transactions submitted through the regular Eulith API flow.
+transactions submitted through the regular Eulith API flow.
 
-For example, using KMS:
+The following sections explain exactly how to create transactions to trade. This part is important, because there are some initially counter-intuitive requirements.
 
+### Eulith Atomic Transactions: Why and How
+
+In order to programatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
+
+An **atomic transaction** is simply a transaction which has 1 or more internal transactions inside of it. These transactions get executed all or none, there's no partial execution. They're easy to do with our client.
+
+In **python** it looks like:
+```python
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+
+# web3.py transaction 1
+# web3.py transaction 2
+
+atomic_tx = ew3.v0.commit_atomic_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt = ew3.eth.wait_for_transaction_receipt(tx)
+```
+
+In **typescript** it looks like:
+```typescript
+// Start Atomic Tx
+const atomicTransaction = new Eulith.AtomicTx({
+    web3: ew3,
+    accountAddress: await acct.getAddress(),
+});
+
+// web3.js transaction 1
+// web3.js transaction 2
+
+// Commit Atomic Tx
+const combinedTransactionAsTxParams = await atomicTransaction.commit();
+
+// Sign and send
+const txHash: string = await ew3.eulith_send_and_sign_transaction(
+    combinedTransactionAsTxParams
+);
+
+// Get tx hash
+const txReceipt: TransactionReceipt = await ew3.eth.getTransactionReceipt(
+    txHash
+);
+```
+
+That's everything you need to know about trading programatically with DeFi Armor.
+
+### Full Working Example
+Let's give 2 full working examples, in python, using an AWS KMS key. The first will do 3 transfers. The second will take 3 transfers and executes them as 1 transaction.
+
+#### First example
+```python
+import boto3
+from eulith_web3.eulith_web3 import EulithWeb3
+from eulith_web3.kms import KmsSigner
+
+aws_session = boto3.Session(profile_name="default")
+aws_client = aws_session.client("kms")
+wallet = KmsSigner(client, "alias/MY_KMS_KEY")
+
+ew3 = EulithWeb3(
+    eulith_url=EULITH_URL,
+    eulith_refresh_token=EULITH_REFRESH_TOKEN,
+    signing_middle_ware=construct_signing_middleware(wallet),
+)
+
+armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(wallet.address)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.1 * 1e18))}) # Send us some Goerli ETH :)
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt1 = ew3.eth.wait_for_transaction_receipt(tx)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.7 * 1e18))})
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt2 = ew3.eth.wait_for_transaction_receipt(tx)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(1.25 * 1e18))})
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt3 = ew3.eth.wait_for_transaction_receipt(tx)
+
+print(receipt1)
+print(receipt2)
+print(receipt3)
+
+```
+
+#### Second example
 ```python
 import boto3
 from eulith_web3.eulith_web3 import EulithWeb3
@@ -144,15 +245,28 @@ ew3 = EulithWeb3(
 
 armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(wallet.address)
 ew3.v0.start_atomic_transaction(wallet.address, safe_address)
-
-ew3.eth.send_transaction(...)
-ew3.eth.send_transaction(...)
-ew3.eth.send_transaction(...)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.1 * 1e18))}) # Send us some Goerli ETH :)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.7 * 1e18))})
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(1.25 * 1e18))})
 
 ew3.v0.commit_atomic_transaction()
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt = ew3.eth.wait_for_transaction_receipt(tx)
+
+print(receipt)
 ```
 
+
 The DeFi Armor policy is applied when the atomic transaction is committed.
+
+# DeFi Armor Utility Commands
 
 ## Armor Utility commands
 View the addresses of the deployed Armor and Safe:
@@ -173,7 +287,7 @@ View the current draft client whitelist:
 ./run.sh get-whitelist --draft
 ```
 
-## Safe Utility Commands
+## Account (Gnosis Safe) Utility Commands
 Armor can't work without its Safe. We have some basic utility commands to do basic transfers in and out
 of the safe with owner approval.
 
