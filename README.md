@@ -17,7 +17,6 @@ As a one-time set-up step, run the set-up script:
 
 ```shell
 ./setup.sh
-source .venv/bin/activate
 ```
 
 This will create a virtual environment and install dependencies. Alternatively, you can directly
@@ -26,7 +25,7 @@ install dependencies from the `requirements.txt` file.
 ### Step 1.2: Set environment variables (depends on wallet type)
 If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will set the environment variables in the .env file.
 
-If you are using a plain text key for demo purposes, your .env file should look like this:
+If you are using a plain text key for demo purposes, your `.env` file should look like this:
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
@@ -37,7 +36,7 @@ EULITH_WALLET_TYPE=text
 PRIVATE_KEY=<plain text key goes here>
 ```
 
-If you are using an AWS KMS wallet (which we recommend for production), your .env file should look like this:
+If you are using an AWS KMS wallet (which we recommend for production), your `.env` file should look like this:
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
