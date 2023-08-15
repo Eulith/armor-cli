@@ -1,6 +1,6 @@
 This repository holds a command-line interface to setup and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
 
-# DeFi Armor CLI Set-up
+# DeFi Armor Set-up via CLI
 There are 3 steps to setting up the DeFi Armor product explained in this guide. These are:
 * Step 1: Setting the parameters for the your deployment of the product.
 * Step 2: Understanding the relvant address roles and deploying the full product.
