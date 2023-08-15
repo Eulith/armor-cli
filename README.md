@@ -323,13 +323,13 @@ Ctrl+C and re-run it again.
 If the issue recurs, try plugging the Ledger into a different port of your machine.
 
 ## Failed with "we can't execute this request"
-This error happens often on Arbitrum because of limited providers. Retry the request.
+This error happens often on Arbitrum because of limited bandwidth in the sequencer (external to Eulith). Retry the request.
 
 ## Intrinsic gas too low
-(you need to add more gas to the tx with --gas... you'd be shocked how much gas Arbitrum will require, for example)
+You need to add more gas to the tx with --gas... you'd be shocked how much gas Arbitrum will require, for example.
 
 ## Insufficient funds
-(you don't have enough ETH in your wallet to cover the cost of the proposed transaction)
+You don't have enough ETH in your wallet to cover the cost of the proposed transaction
 
 ## Connection aborted
-(Arbitrum sequencer told you to go fuck yourself, just try again)
+This error happens often on Arbitrum because of limited bandwidth in the sequencer (external to Eulith). Retry the request.
