@@ -176,8 +176,10 @@ const txReceipt: TransactionReceipt = await ew3.eth.getTransactionReceipt(
 
 That's everything you need to know about trading programatically with DeFi Armor.
 
-### Full Working Example
+## Full Working Example
 Let's give 2 full working examples, in python, using an AWS KMS key. The first will do 3 transfers. The second will take 3 transfers and executes them as 1 transaction.
+
+## If the below is confusing, please call us and we will ship a feature to make doing non-atomic transactions much more convenient
 
 #### First example
 ```python
