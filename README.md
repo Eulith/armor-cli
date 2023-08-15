@@ -1,7 +1,18 @@
-This repository holds a command-line interface to Eulith's DeFi Armor product.
+This repository holds a command-line interface to setup and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
 
-# Using the CLI
-## Set-up
+# DeFi Armor CLI Set-up
+There are 3 steps to setting up the DeFi Armor product explained in this guide. These are:
+* Step 1: Setting the parameters for the your deployment of the product.
+* Step 2: Understanding the relvant address roles and deploying the full product.
+* Step 3: Creating and approving the whitelist policy addresses.
+
+Once you're finished with the setup, you'll be able to trade protected by DeFi Armor. Will show you how to trade after the 3 Step setup.
+
+Before getting started, we recommend scrolling down to the **Troubleshooting** section at the bottom to glance at the, hopefully unlikely, but possible errors you can get and what to do about them.
+
+## Set-up Step 1
+
+### Step 1.1: Install dependencies and create virtual environment
 As a one-time set-up step, run the set-up script:
 
 ```shell
@@ -12,48 +23,55 @@ source .venv/bin/activate
 This will create a virtual environment and install dependencies. Alternatively, you can directly
 install dependencies from the `requirements.txt` file.
 
-## Environment variables
-The Armor CLI requires some environment variables to be set.
+### Step 1.2: Set environment variables (depends on wallet type)
+If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will set the environment variables in the .env file.
 
+If you are using a plain text key for demo purposes, your .env file should look like this:
 ```shell
-export EULITH_REFRESH_TOKEN=<...>
-export EULITH_NETWORK_TYPE=mainnet  # choices: mainnet, arb, goerli
-export EULITH_AUTH_ADDRESS=0x123  # the authorized trading address (see below)
+EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
 
-# If using a Ledger:
-export EULITH_WALLET_TYPE=ledger
-
-# If using a Trezor:
-export EULITH_WALLET_TYPE=trezor
-
-# If using KMS:
-export EULITH_WALLET_TYPE=kms
-export AWS_CREDENTIALS_PROFILE_NAME=<...>
-export EULITH_KMS_KEY=<...>  # the name of your key in KMS
+# If using a plain text private key (for demo obviously)
+EULITH_WALLET_TYPE=text
+PRIVATE_KEY=<plain text key goes here>
 ```
 
-## Addresses
+If you are using an AWS KMS wallet (which we recommend for production), your .env file should look like this:
+```shell
+EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
+
+# If using KMS:
+EULITH_WALLET_TYPE=kms
+AWS_CREDENTIALS_PROFILE_NAME=<...>
+EULITH_KMS_KEY=<...>  # the name of your key in KMS
+```
+
+## Set-up Step 2
+
+### Step 2.1: Understand DeFi Armor address roles
 Several Ethereum addresses are involved in setting up DeFi Armor and it's important to keep track of
 the differences between them.
 
 The **authorized trading address** is the wallet that will be used for trading once DeFi Armor is
-enabled. We strongly encourage you to use a systematic signer (i.e., a signer that can sign without
-human intervention) like KMS for your authorized trading address.
+enabled. We strongly encourage you to use an automated signer (i.e., a signer that can sign without
+human intervention) like (AWS/GCP) KMS for your authorized trading address.
 
 The **deployer address** is the wallet used in some of the steps below to deploy the Armor contract.
 Currently the deployer address must be the same as the authorized trading address, but that
 restriction will be lifted in the future.
 
-The **Safe owner addresses** are the wallets that are owners of the Gnosis Safe on which the Armor
-contract is a module. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
+The **Safe owner addresses** are the addresses that own the account - the account being a Gnosis Safe contract. The critical role of these addresses is that they can withdraw the funds from the account given m of n signatures. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
 threshold of 3 and the KMS wallets being different than the authorized trading address. Note the Python client
 supports Fireblocks raw signing so your owners could be (Fireblocks, Fireblocks, Ledger, KMS, KMS), for example.
 
 Each command below is annotated with the wallet that should be used to run the command. See the
 section above for how to configure different wallets via environment variables.
 
-## Activating an Armor contract
-First, deploy the Armor contract to the chain. This also deploys a new Gnosis Safe.
+### Step 2.2: Deploy the DeFi Armor product
+First, deploy the on-chain component of DeFi Armor (we'll call this component "the Armor contract"). This step also deploys a new Gnosis Safe, which will hold your funds as your "account".
 
 **WARNING:** On Ethereum mainnet, this transaction may be costly (0.3 ETH or more) depending on gas
 prices.
@@ -63,40 +81,153 @@ prices.
 ./run.sh deploy-armor
 ```
 
-Next, sign the Armor contract with a threshold of owners of your new Safe. For instance, to set up a
-Safe with 3 owners and a threshold of 2, run this command twice.
+### Step 2.3: Sign the Armor contract with enough owner addresses to meet the threshold of your new account. 
 
+For instance, to set up an account that requires a threshold of 2 owner signatures, you will do the below twice.
+
+Check your environment variables from Step 1.2 to make sure you are using the right wallet. If you are using the correct wallet, run:
 ```shell
 # WALLET: Safe ew3
 ./run.sh sign-armor-as-ew3
 ```
 
-Enable the Armor contract as a module on the Safe, using the owner addresses from the previous step.
+For the next signature (for example, if you have run the above once but have a threshold of 2), change the environment variables to the new wallet. Then repeat this step.
+
+You're finished with this step once you've run the above command with the threshold number of addresses for your account.
+
+### Step 2.4: Active the Armor product
+
+Run the following command, appending the addresses of _all_ account owners. _All_ meaning not only the signatures used above, but all owners associated with the account.
 
 ```shell
 # WALLET: deployer
 ./run.sh enable-armor --threshold X --ew3-addresses 0x001 0x002 0x003
 ```
 
-Next, create a draft client whitelist for trusted addresses.
+## Set-up Step 3
+
+### Step 3.1: Create your first whitelist.
+Create a draft client whitelist for trusted addresses. The addresses appended to the end of the command are the addresses in which you're comfortable with your funds being moved to.
 
 ```shell
 # WALLET: deployer
 ./run.sh create-whitelist --addresses 0x001 0x002 0x003
 ```
 
-Repeat the signing process with a threshold of owners of the Safe to enable the whitelist.
+### Step 3.2: Approve the whitelist with the owners of the account.
+Repeat the signing process with a threshold of owners of the Safe to enable the whitelist. This means, similar to *Step 2.3*, you need to change the environment variables, run this script, than change and re-run for another owner until you've met the threshold number.
 
 ```shell
 # WALLET: Safe ew3
 ./run.sh sign-whitelist --list-id XYZ
 ```
 
-Your DeFi Armor contract is now ready to use! The DeFi Armor security policy will be applied to any
-atomic transactions submitted through the regular Eulith API flow.
+# Congrats, you're set up!
 
-For example, using KMS:
+## Let's test it with some trades.
 
+Your DeFi Armor is now ready to use! The DeFi Armor security policy will be applied to any
+transactions submitted through the regular Eulith API flow.
+
+The following sections explain exactly how to create transactions to trade. This part is important, because there are some initially counter-intuitive requirements.
+
+### Eulith Atomic Transactions: Why and How
+
+In order to programatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
+
+An **atomic transaction** is simply a transaction which has 1 or more internal transactions inside of it. These transactions get executed all or none, there's no partial execution. They're easy to do with our client.
+
+In **python** it looks like:
+```python
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+
+# web3.py transaction 1
+# web3.py transaction 2
+
+atomic_tx = ew3.v0.commit_atomic_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt = ew3.eth.wait_for_transaction_receipt(tx)
+```
+
+In **typescript** it looks like:
+```typescript
+// Start Atomic Tx
+const atomicTransaction = new Eulith.AtomicTx({
+    web3: ew3,
+    accountAddress: await acct.getAddress(),
+});
+
+// web3.js transaction 1
+// web3.js transaction 2
+
+// Commit Atomic Tx
+const combinedTransactionAsTxParams = await atomicTransaction.commit();
+
+// Sign and send
+const txHash: string = await ew3.eulith_send_and_sign_transaction(
+    combinedTransactionAsTxParams
+);
+
+// Get tx hash
+const txReceipt: TransactionReceipt = await ew3.eth.getTransactionReceipt(
+    txHash
+);
+```
+
+That's everything you need to know about trading programatically with DeFi Armor.
+
+### Full Working Example
+Let's give 2 full working examples, in python, using an AWS KMS key. The first will do 3 transfers. The second will take 3 transfers and executes them as 1 transaction.
+
+#### First example
+```python
+import boto3
+from eulith_web3.eulith_web3 import EulithWeb3
+from eulith_web3.kms import KmsSigner
+
+aws_session = boto3.Session(profile_name="default")
+aws_client = aws_session.client("kms")
+wallet = KmsSigner(client, "alias/MY_KMS_KEY")
+
+ew3 = EulithWeb3(
+    eulith_url=EULITH_URL,
+    eulith_refresh_token=EULITH_REFRESH_TOKEN,
+    signing_middle_ware=construct_signing_middleware(wallet),
+)
+
+armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(wallet.address)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.1 * 1e18))}) # Send us some Goerli ETH :)
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt1 = ew3.eth.wait_for_transaction_receipt(tx)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.7 * 1e18))})
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt2 = ew3.eth.wait_for_transaction_receipt(tx)
+
+ew3.v0.start_atomic_transaction(wallet.address, safe_address)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(1.25 * 1e18))})
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt3 = ew3.eth.wait_for_transaction_receipt(tx)
+
+print(receipt1)
+print(receipt2)
+print(receipt3)
+
+```
+
+#### Second example
 ```python
 import boto3
 from eulith_web3.eulith_web3 import EulithWeb3
@@ -114,15 +245,28 @@ ew3 = EulithWeb3(
 
 armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(wallet.address)
 ew3.v0.start_atomic_transaction(wallet.address, safe_address)
-
-ew3.eth.send_transaction(...)
-ew3.eth.send_transaction(...)
-ew3.eth.send_transaction(...)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.1 * 1e18))}) # Send us some Goerli ETH :)
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(0.7 * 1e18))})
+ew3.eth.send_transaction({'from': wallet.address,
+                              'to': '0xFc11E697f23E5CbBeD3c59aC249955da57e57672', 
+                              'value': hex(int(1.25 * 1e18))})
 
 ew3.v0.commit_atomic_transaction()
+atomic_tx = ew3.eulith_commit_transaction()
+tx = ew3.eth.send_transaction(atomic_tx)
+receipt = ew3.eth.wait_for_transaction_receipt(tx)
+
+print(receipt)
 ```
 
+
 The DeFi Armor policy is applied when the atomic transaction is committed.
+
+# DeFi Armor Utility Commands
 
 ## Armor Utility commands
 View the addresses of the deployed Armor and Safe:
@@ -143,7 +287,7 @@ View the current draft client whitelist:
 ./run.sh get-whitelist --draft
 ```
 
-## Safe Utility Commands
+## Account (Gnosis Safe) Utility Commands
 Armor can't work without its Safe. We have some basic utility commands to do basic transfers in and out
 of the safe with owner approval.
 
@@ -179,3 +323,12 @@ If the issue recurs, try plugging the Ledger into a different port of your machi
 
 ## Failed with "we can't execute this request"
 This error happens often on Arbitrum because of limited providers. Retry the request.
+
+## Intrinsic gas too low
+(you need to add more gas to the tx with --gas... you'd be shocked how much gas Arbitrum will require, for example)
+
+## Insufficient funds
+(you don't have enough ETH in your wallet to cover the cost of the proposed transaction)
+
+## Connection aborted
+(Arbitrum sequencer told you to go fuck yourself, just try again)
