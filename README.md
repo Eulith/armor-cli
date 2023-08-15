@@ -22,31 +22,29 @@ This will create a virtual environment and install dependencies. Alternatively, 
 install dependencies from the `requirements.txt` file.
 
 ### Step 1.2: Set environment variables (depends on wallet type)
-If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will set the environment variables below.
+If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will set the environment variables in the .env file.
 
+If you are using a plain text key for demo purposes, your .env file should look like this:
 ```shell
-export EULITH_REFRESH_TOKEN=<...>
-export EULITH_NETWORK_TYPE=mainnet  # choices: mainnet, arb, goerli
-export EULITH_AUTH_ADDRESS=0x123  # the authorized trading address (see below)
+EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
 
-# If using a Ledger:
-export EULITH_WALLET_TYPE=ledger
-
-# If using a Trezor:
-export EULITH_WALLET_TYPE=trezor
-
-# If using KMS:
-export EULITH_WALLET_TYPE=kms
-export AWS_CREDENTIALS_PROFILE_NAME=<...>
-export EULITH_KMS_KEY=<...>  # the name of your key in KMS
+# If using a plain text private key (for demo obviously)
+EULITH_WALLET_TYPE=text
+PRIVATE_KEY=<plain text key goes here>
 ```
 
-If you are using a plan text private key (obviously for demo purposes), you will ignore the above and set the following environment variables.
+If you are using an AWS KMS wallet (which we recommend for production), your .env file should look like this:
 ```shell
-EULITH_REFRESH_TOKEN=<...>
-EULITH_NETWORK_TYPE=dev
-EULITH_WALLET_TYPE=text
-PRIVATE_KEY=<plain text private key goes here>
+EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
+
+# If using KMS:
+EULITH_WALLET_TYPE=kms
+AWS_CREDENTIALS_PROFILE_NAME=<...>
+EULITH_KMS_KEY=<...>  # the name of your key in KMS
 ```
 
 ## Set-up Step 2
