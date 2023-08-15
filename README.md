@@ -1,7 +1,16 @@
-This repository holds a command-line interface to Eulith's DeFi Armor product.
+This repository holds a command-line interface to setup and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
 
-# Using the CLI
-## Set-up
+# DeFi Armor CLI Set-up
+There are 3 steps to setting up the DeFi Armor product explained in this guide. These are:
+* Step 1: Setting the parameters for the your deployment of the product.
+* Step 2: Understanding the relvant address roles and deploying the full product.
+* Step 3: Creating and approving the whitelist policy addresses.
+
+Once you're finished with the setup, you'll be able to trade protected by DeFi Armor.
+
+## Set-up Step 1
+
+### Step 1.1: Install dependencies and create virtual environment
 As a one-time set-up step, run the set-up script:
 
 ```shell
@@ -12,8 +21,8 @@ source .venv/bin/activate
 This will create a virtual environment and install dependencies. Alternatively, you can directly
 install dependencies from the `requirements.txt` file.
 
-## Environment variables
-The Armor CLI requires some environment variables to be set.
+### Step 1.2: Set environment variables (depends on wallet type)
+If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will set the environment variables below.
 
 ```shell
 export EULITH_REFRESH_TOKEN=<...>
@@ -32,28 +41,37 @@ export AWS_CREDENTIALS_PROFILE_NAME=<...>
 export EULITH_KMS_KEY=<...>  # the name of your key in KMS
 ```
 
-## Addresses
+If you are using a plan text private key (obviously for demo purposes), you will ignore the above and set the following environment variables.
+```shell
+EULITH_REFRESH_TOKEN=<...>
+EULITH_NETWORK_TYPE=dev
+EULITH_WALLET_TYPE=text
+PRIVATE_KEY=<plain text private key goes here>
+```
+
+## Set-up Step 2
+
+### Step 2.1: Understand DeFi Armor address roles
 Several Ethereum addresses are involved in setting up DeFi Armor and it's important to keep track of
 the differences between them.
 
 The **authorized trading address** is the wallet that will be used for trading once DeFi Armor is
-enabled. We strongly encourage you to use a systematic signer (i.e., a signer that can sign without
-human intervention) like KMS for your authorized trading address.
+enabled. We strongly encourage you to use an automated signer (i.e., a signer that can sign without
+human intervention) like (AWS/GCP) KMS for your authorized trading address.
 
 The **deployer address** is the wallet used in some of the steps below to deploy the Armor contract.
 Currently the deployer address must be the same as the authorized trading address, but that
 restriction will be lifted in the future.
 
-The **Safe owner addresses** are the wallets that are owners of the Gnosis Safe on which the Armor
-contract is a module. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
+The **Safe owner addresses** are the addresses that own the account - the account being a Gnosis Safe contract. The critical role of these addresses is that they can withdraw the funds from the account given m of n signatures. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
 threshold of 3 and the KMS wallets being different than the authorized trading address. Note the Python client
 supports Fireblocks raw signing so your owners could be (Fireblocks, Fireblocks, Ledger, KMS, KMS), for example.
 
 Each command below is annotated with the wallet that should be used to run the command. See the
 section above for how to configure different wallets via environment variables.
 
-## Activating an Armor contract
-First, deploy the Armor contract to the chain. This also deploys a new Gnosis Safe.
+### Step 2.2: Deploy the DeFi Armor product
+First, deploy the on-chain component of DeFi Armor (we'll call this component "the Armor contract"). This step also deploys a new Gnosis Safe, which will hold your funds as your "account".
 
 **WARNING:** On Ethereum mainnet, this transaction may be costly (0.3 ETH or more) depending on gas
 prices.
@@ -63,36 +81,50 @@ prices.
 ./run.sh deploy-armor
 ```
 
-Next, sign the Armor contract with a threshold of owners of your new Safe. For instance, to set up a
-Safe with 3 owners and a threshold of 2, run this command twice.
+### Step 2.3: Sign the Armor contract with enough owner addresses to meet the threshold of your new account. 
 
+For instance, to set up an account that requires a threshold of 2 owner signatures, you will do the below twice.
+
+Check your environment variables from Step 1.2 to make sure you are using the right wallet. If you are using the correct wallet, run:
 ```shell
 # WALLET: Safe ew3
 ./run.sh sign-armor-as-ew3
 ```
 
-Enable the Armor contract as a module on the Safe, using the owner addresses from the previous step.
+For the next signature (for example, if you have run the above once but have a threshold of 2), change the environment variables to the new wallet. Then repeat this step.
+
+You're finished with this step once you've run the above command with the threshold number of addresses for your account.
+
+### Step 2.4: Active the Armor product
+
+Run the following command, appending the addresses of _all_ account owners. _All_ meaning not only the signatures used above, but all owners associated with the account.
 
 ```shell
 # WALLET: deployer
 ./run.sh enable-armor --threshold X --ew3-addresses 0x001 0x002 0x003
 ```
 
-Next, create a draft client whitelist for trusted addresses.
+## Set-up Step 3
+
+### Step 3.1: Create your first whitelist.
+Create a draft client whitelist for trusted addresses. The addresses appended to the end of the command are the addresses in which you're comfortable with your funds being moved to.
 
 ```shell
 # WALLET: deployer
 ./run.sh create-whitelist --addresses 0x001 0x002 0x003
 ```
 
-Repeat the signing process with a threshold of owners of the Safe to enable the whitelist.
+### Step 3.2: Approve the whitelist with the owners of the account.
+Repeat the signing process with a threshold of owners of the Safe to enable the whitelist. This means, similar to *Step 2.3*, you need to change the environment variables, run this script, than change and re-run for another owner until you've met the threshold number.
 
 ```shell
 # WALLET: Safe ew3
 ./run.sh sign-whitelist --list-id XYZ
 ```
 
-Your DeFi Armor contract is now ready to use! The DeFi Armor security policy will be applied to any
+## Congrats! ##
+
+Your DeFi Armor is now ready to use! The DeFi Armor security policy will be applied to any
 atomic transactions submitted through the regular Eulith API flow.
 
 For example, using KMS:
@@ -179,3 +211,12 @@ If the issue recurs, try plugging the Ledger into a different port of your machi
 
 ## Failed with "we can't execute this request"
 This error happens often on Arbitrum because of limited providers. Retry the request.
+
+## Intrinsic gas too low
+(you need to add more gas to the tx with --gas... you'd be shocked how much gas Arbitrum will require, for example)
+
+## Insufficient funds
+(you don't have enough ETH in your wallet to cover the cost of the proposed transaction)
+
+## Connection aborted
+(Arbitrum sequencer told you to go fuck yourself, just try again)
