@@ -308,7 +308,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     refresh_token = getenv_or_bail("EULITH_REFRESH_TOKEN")
-    auth_address = os.environ.get("EULITH_AUTH_ADDRESS")
+    auth_address = os.environ.get("EULITH_TRADING_ADDRESS")
     validate_addresses([auth_address])
 
     network_type = getenv_or_bail("EULITH_NETWORK_TYPE")
