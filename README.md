@@ -1,7 +1,17 @@
 This repository holds a command-line interface to set up and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
 
 # DeFi Armor Key Overview
-![key_summary](static/key_summary.png)
+
+| Address (Key/Account) | Who Controls?  | Privileges                 | Key Host        | ETH?      | Assets? | Raw Signing? | Compromised?                                                                                                             | Lost?                                                                               |
+|-----------------------|----------------|----------------------------|-----------------|-----------|---------|--------------|--------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| Vault Owner           | Client         | Root with owner threshold  | Client's choice | ✅ (gas)   | ❌       | ❌            | Disable for vault and replace, no problem if other owner keys not compromised at the same time.                          | Disable & replace lost owner. No problem if other owners not lost at the same time. |
+| Auto-Trading          | Client via ACE | Trading, subject to policy | AWS KMS         | ✅ (gas)   | ❌       | ✅            | Disable user, replace Armor module with new key. Auto-Trading key not useful outside of policy.                          | Replace Armor module, reconfigure ACE. No problem other than a little downtime.     |
+| Manual-Trading        | Client         | Trading, subject to policy | Client's choice | ✅ (gas)   | ❌       | ❌            | Disable user, replace Armor module with new key. Manual-Trading key not useful outside of policy.                        | Replace Armor module, reconfigure ACE. No problem other than a little downtime.     |
+| Instruction           | Client         | Instruct & authorize ACE   | Client's choice | ❌         | ❌       | ❌            | Re-key ACE (simple config change)                                                                                        | Re-key ACE (simple config change)                                                   |
+| CoSigner              | Eulith         | Co-sign transactions       | AWS KMS         | ❌         | ❌       | ❌            | Non-extractable key allows us to regain control effectively; compromised cosigner not useful without compromised client. | Disable all on-chain modules, deploy new                                            |
+| Vault                 | Blockchain     | N/A                        | Blockchain      | ✅ (asset) | ✅       | ❌            | Remove all assets                                                                                                        | N/A                                                                                 |
+| Armor Module          | Blockchain     | N/A                        | Blockchain      | ❌         | ❌       | ❌            | Disable & replace module                                                                                                 | N/A                                                                                 |
+
 
 # DeFi Armor Set-up via CLI
 There are 3 steps to setting up the DeFi Armor product explained in this guide. These are:
@@ -32,7 +42,7 @@ If you are using a plain text key for demo purposes, your `.env` file should loo
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
-EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
+EULITH_TRADING_ADDRESS=<0x123, the auto or manual trading key address (see below)>
 
 # If using a plain text private key (for demo obviously)
 EULITH_WALLET_TYPE=text
@@ -43,7 +53,7 @@ If you are using an AWS KMS wallet (which we recommend for production), your `.e
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
-EULITH_AUTH_ADDRESS=<0x123, the authorized trading address (see below)>
+EULITH_TRADING_ADDRESS=<0x123, the address of your trading key (see the table above if you're unsure)>
 
 # If using KMS:
 EULITH_WALLET_TYPE=kms
@@ -57,23 +67,26 @@ EULITH_KMS_KEY=<...>  # the name of your key in KMS
 Several Ethereum addresses are involved in setting up DeFi Armor and it's important to keep track of
 the differences between them.
 
-The **authorized trading address** is the wallet that will be used for trading once DeFi Armor is
-enabled. We strongly encourage you to use an automated signer (i.e., a signer that can sign without
-human intervention) like (AWS/GCP) KMS for your authorized trading address.
+The **(auto or manual) trading key address** is the wallet that will be used for trading once DeFi Armor is
+enabled. If you intend to do automated trading, you'll need to use an automated signer (i.e., a signer that can sign without
+human intervention) like (AWS/GCP) KMS for your auto-trading key.
 
-The **deployer address** is the wallet used in some of the steps below to deploy the Armor contract.
-Currently the deployer address must be the same as the authorized trading address, but that
-restriction will be lifted in the future.
+The **deployer address** is the wallet used in some steps below to deploy the Armor contract.
+It doesn't matter what address this is, it just needs to have enough ETH to get the setup
+transactions confirmed on-chain.
 
-The **Safe owner addresses** are the addresses that own the account - the account being a Gnosis Safe contract. The critical role of these addresses is that they can withdraw the funds from the account given m of n signatures. A recommended set-up is 5 owners (Ledger, Ledger, Ledger, KMS, KMS) with a
-threshold of 3 and the KMS wallets being different than the authorized trading address. Note the Python client
+The **vault owner addresses** are the addresses that own the vault - the vault being a Gnosis Safe contract. 
+The critical role of these addresses is that they can withdraw the funds from the account given m of n signatures. 
+A recommended set-up is 5 owners (Trezor, Trezor, Trezor, KMS, KMS) with a
+threshold of 3 and the KMS wallets being different from the auto-trading key address. Note the Python client
 supports Fireblocks raw signing so your owners could be (Fireblocks, Fireblocks, Ledger, KMS, KMS), for example.
 
 Each command below is annotated with the wallet that should be used to run the command. See the
 section above for how to configure different wallets via environment variables.
 
 ### Step 2.2: Deploy the DeFi Armor product
-First, deploy the on-chain component of DeFi Armor (we'll call this component "the Armor contract"). This step also deploys a new Gnosis Safe, which will hold your funds as your "account".
+First, deploy the on-chain component of DeFi Armor (we'll call this component "the Armor contract"). 
+This step also deploys a new Gnosis Safe, which will hold your funds as your "vault".
 
 **WARNING:** On Ethereum mainnet, this transaction may be costly (0.3 ETH or more) depending on gas
 prices.
@@ -85,21 +98,30 @@ prices.
 
 ### Step 2.3: Sign the Armor contract with enough owner addresses to meet the threshold of your new account. 
 
-For instance, to set up an account that requires a threshold of 2 owner signatures, you will do the below twice.
+For instance, to set up an account that requires a threshold of 2 owner signatures, you will do the below twice,
+changing the connected wallet to one of the owners each time.
 
-Check your environment variables from Step 1.2 to make sure you are using the right wallet. If you are using the correct wallet, run:
+Check your environment variables from Step 1.2 to make sure you are using the right wallet.
+You can see the address of the connected wallet by running
 ```shell
-# WALLET: Safe ew3
-./run.sh sign-armor-as-ew3
+./run.sh show-wallet
 ```
 
-For the next signature (for example, if you have run the above once but have a threshold of 2), change the environment variables to the new wallet. Then repeat this step.
+After verifying that you're using the correct wallet, run:
+```shell
+# WALLET: Owner <m>/<n>
+./run.sh sign-armor-as-owner
+```
+
+For the next signature (for example, if you have run the above once but have a threshold of 2), 
+change the environment variables to the new wallet. Then repeat this step.
 
 You're finished with this step once you've run the above command with the threshold number of addresses for your account.
 
 ### Step 2.4: Active the Armor product
 
-Run the following command, appending the addresses of _all_ account owners. _All_ meaning not only the signatures used above, but all owners associated with the account.
+Run the following command, appending the addresses of _all_ account owners. _All_ meaning not only the signatures used above, 
+but all owners associated with the account.
 
 ```shell
 # WALLET: deployer
@@ -117,10 +139,12 @@ Create a draft client whitelist for trusted addresses. The addresses appended to
 ```
 
 ### Step 3.2: Approve the whitelist with the owners of the account.
-Repeat the signing process with a threshold of owners of the Safe to enable the whitelist. This means, similar to *Step 2.3*, you need to change the environment variables, run this script, than change and re-run for another owner until you've met the threshold number.
+Repeat the signing process with a threshold of owners of the Safe to enable the whitelist. 
+This means, similar to *Step 2.3*, you need to change the environment variables, run this script, 
+then change and re-run for another owner until you've met the threshold number.
 
 ```shell
-# WALLET: Safe ew3
+# WALLET: Owner <m>/<n>
 ./run.sh sign-whitelist --list-id XYZ
 ```
 
@@ -135,7 +159,7 @@ The following sections explain exactly how to create transactions to trade. This
 
 ### Eulith Atomic Transactions: Why and How
 
-In order to programmatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
+In order to programmatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, Java, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
 
 An **atomic transaction** is simply a transaction which has 1 or more internal transactions inside of it. These transactions get executed all or none, there's no partial execution. They're easy to do with our client.
 
@@ -291,8 +315,8 @@ View the current draft client whitelist:
 ./run.sh get-whitelist --draft
 ```
 
-## Account (Gnosis Safe) Utility Commands
-Armor can't work without its Safe. We have some basic utility commands to do basic transfers in and out
+## Vault (Gnosis Safe) Utility Commands
+Armor can't work without its vault (Gnosis Safe). We have some basic utility commands to do basic transfers in and out
 of the safe with owner approval.
 
 View the Safe's balance of a given token
