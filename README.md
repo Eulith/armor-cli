@@ -1,9 +1,12 @@
-This repository holds a command-line interface to setup and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
+This repository holds a command-line interface to set up and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
+
+# DeFi Armor Key Overview
+![key_summary](static/key_summary.png)
 
 # DeFi Armor Set-up via CLI
 There are 3 steps to setting up the DeFi Armor product explained in this guide. These are:
-* Step 1: Setting the parameters for the your deployment of the product.
-* Step 2: Understanding the relvant address roles and deploying the full product.
+* Step 1: Setting the parameters for the deployment of the product.
+* Step 2: Understanding the relevant address roles and deploying the full product.
 * Step 3: Creating and approving the whitelist policy addresses.
 
 Once you're finished with the setup, you'll be able to trade protected by DeFi Armor. Will show you how to trade after the 3 Step setup.
@@ -132,7 +135,7 @@ The following sections explain exactly how to create transactions to trade. This
 
 ### Eulith Atomic Transactions: Why and How
 
-In order to programatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
+In order to programmatically trade with DeFi Armor, you need to use one of our client libraries (in Python, Typescript, or Rust). Our libraries are all wrappers around Web3; for example, anything you can do in web3.py works out of the box with our python client library. You cannot use web3 by itself - the reason is because there's a whole lot that goes on under the hood to make DeFi Armor possible, and that includes some additional client-side tools. The most important tool is the **atomic transaction**.
 
 An **atomic transaction** is simply a transaction which has 1 or more internal transactions inside of it. These transactions get executed all or none, there's no partial execution. They're easy to do with our client.
 
@@ -173,7 +176,7 @@ const txReceipt: TransactionReceipt = await ew3.eth.getTransactionReceipt(
 );
 ```
 
-That's everything you need to know about trading programatically with DeFi Armor.
+That's everything you need to know about trading programmatically with DeFi Armor.
 
 ## Full Working Example
 Let's give 2 full working examples, in python, using an AWS KMS key. The first will do 3 transfers. The second will take 3 transfers and executes them as 1 transaction.
