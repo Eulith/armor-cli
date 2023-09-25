@@ -41,7 +41,7 @@ If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will s
 If you are using a plain text key for demo purposes, your `.env` file should look like this:
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
-EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli, poly, dev>
 EULITH_TRADING_ADDRESS=<0x123, the auto or manual trading key address (see below)>
 
 # If using a plain text private key (for demo obviously)
@@ -52,7 +52,7 @@ PRIVATE_KEY=<plain text key goes here>
 If you are using an AWS KMS wallet (which we recommend for production), your `.env` file should look like this:
 ```shell
 EULITH_REFRESH_TOKEN=<you get this from us>
-EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli>
+EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli, poly, dev>
 EULITH_TRADING_ADDRESS=<0x123, the address of your trading key (see the table above if you're unsure)>
 
 # If using KMS:
@@ -75,8 +75,8 @@ The **deployer address** is the wallet used in some steps below to deploy the Ar
 It doesn't matter what address this is, it just needs to have enough ETH to get the setup
 transactions confirmed on-chain.
 
-The **vault owner addresses** are the addresses that own the vault - the vault being a Gnosis Safe contract. 
-The critical role of these addresses is that they can withdraw the funds from the account given m of n signatures. 
+The **vault owner addresses** are the addresses that own the vault - the vault being a [Gnosis Safe](https://safe.global) contract. 
+The critical role of these addresses is that they can withdraw the funds from the account given `m` of `n` signatures. 
 A recommended set-up is 5 owners (Trezor, Trezor, Trezor, KMS, KMS) with a
 threshold of 3 and the KMS wallets being different from the auto-trading key address. Note the Python client
 supports Fireblocks raw signing so your owners could be (Fireblocks, Fireblocks, Ledger, KMS, KMS), for example.
@@ -125,7 +125,7 @@ but all owners associated with the account.
 
 ```shell
 # WALLET: deployer
-./run.sh enable-armor --threshold X --ew3-addresses 0x001 0x002 0x003
+./run.sh enable-armor --threshold X --owner-addresses 0x001 0x002 0x003
 ```
 
 ## Set-up Step 3
@@ -349,7 +349,7 @@ Ctrl+C and re-run it again.
 
 If the issue recurs, try plugging the Ledger into a different port of your machine.
 
-## Failed with `We can't execute this request`
+## `We can't execute this request`
 This error happens often on Arbitrum because of limited bandwidth in the sequencer (external to Eulith). Retry the request.
 
 ## `Intrinsic gas too low`
@@ -360,3 +360,7 @@ You don't have enough ETH in your wallet to cover the cost of the proposed trans
 
 ## `Connection aborted`
 This error happens often on Arbitrum because of limited bandwidth in the sequencer (external to Eulith). Retry the request.
+
+## `On-Chain: Fail with error 'Create2 call failed'`
+Your tx ran out of gas. You need to specify more gas with `--gas <GAS AMOUNT>`. Example of this failure:
+https://polygonscan.com/tx/0xd0d357abf434697fef2901ed2b85dff98846e8328ed69c3c88ca232915062168
