@@ -1,6 +1,20 @@
-This repository holds a command-line interface to set up and transact using Eulith's DeFi Armor product. You can look under the hood of the CLI in this repo.
+# DeFi Armor 
 
-# DeFi Armor Key Overview
+If you want to do systematic trading (automatic signing, no human intervention for a given trade), you open yourself up to a world of risk.
+
+People have different strategies to manage this risk. We think they all make serious tradeoffs in flexibility and security.
+
+Ideally, you would have infrastructure for systematic trading that:
+
+1. Allows you to generically interact with whatever protocol you want,
+
+2. Without having to move your funds to some sort of "proxy trader,"
+
+3. In a way that enforces security policies such as "don't let anyone transfer ERC20 tokens to an unknown destination"
+
+This is what DeFi Armor does. We think it's the best on-chain systematic trading infrastructure in the market. It's secure, reliable, and protocol agnostic.
+
+# Key Overview
 
 | Address (Key/Account) | Who Controls?  | Privileges                 | Key Host        | ETH?      | Assets? | Raw Signing? | Compromised?                                                                                                             | Lost?                                                                               |
 |-----------------------|----------------|----------------------------|-----------------|-----------|---------|--------------|--------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
