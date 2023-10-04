@@ -151,7 +151,7 @@ NOTE: If you submit the enable armor transaction to the network yourself, you'll
 the hash to us so we can verify everything is setup correctly. You can do this by running:
 
 ```shell
-./run.sh submit_setup_safe --tx-hash 0xtxhash......
+./run.sh submit-setup-safe --tx-hash 0xtxhash......
 ```
 ## Set-up Step 3
 

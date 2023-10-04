@@ -258,7 +258,7 @@ if __name__ == "__main__":
     parser_enable_armor.set_defaults(func=enable_armor)
 
     parser_submit_setup_safe_hash = subparsers.add_parser(
-        "submit_setup_safe", help="The hash of the tx where you set up the Safe and enabled armor"
+        "submit-setup-safe", help="The hash of the tx where you set up the Safe and enabled armor"
     )
     parser_submit_setup_safe_hash.add_argument("--tx-hash", type=str, required=True)
     parser_submit_setup_safe_hash.set_defaults(func=submit_setup_safe_hash)
