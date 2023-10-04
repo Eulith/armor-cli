@@ -68,10 +68,18 @@ def deploy_armor(ew3, wallet, auth_address, args):
 def sign_armor_as_owner(ew3, wallet, auth_address, args):
     validate_addresses([auth_address])
 
-    print("When prompted, please sign transaction.")
+    print("When prompted, please sign the request")
     status = ew3.v0.submit_enable_module_signature(auth_address, wallet)
     if not status:
         bail("failed to submit enable module signature")
+
+
+def get_owner_signatures(ew3, wallet, auth_address, args):
+    validate_addresses([auth_address])
+    signatures = ew3.v0.get_accepted_enable_armor_signatures(auth_address)
+
+    for s in signatures:
+        print(s)
 
 
 def show_wallet_address(ew3, wallet, auth_address, args):
@@ -106,6 +114,14 @@ def enable_armor(ew3, wallet, auth_address, args):
         bail("failed to submit enable Armor module")
 
 
+def submit_setup_safe_hash(ew3, wallet, auth_address, args):
+    status, r = ew3.eulith_service.submit_enable_safe_tx_hash(args.tx_hash, has_ace=False)
+    if status:
+        print('Successfully processed setup safe hash')
+    else:
+        print(f'Unable to process setup safe hash, response came back {r}')
+
+
 def addresses(ew3, wallet, auth_address, args):
     armor_address, safe_address = ew3.v0.get_armor_and_safe_addresses(auth_address)
     print(f"Armor address: {armor_address}")
@@ -115,6 +131,11 @@ def addresses(ew3, wallet, auth_address, args):
 def create_whitelist(ew3, wallet, auth_address, args):
     list_id = ew3.v0.create_draft_client_whitelist(auth_address, args.addresses)
     print(f"Created draft client whitelist with ID {list_id}.")
+
+
+def append_whitelist(ew3: EulithWeb3, wallet, auth_address, args):
+    list_id = ew3.v0.append_to_draft_client_whitelist(auth_address, args.addresses, args.chain_id)
+    print(f"Successfully appended to whitelist with ID: {list_id}")
 
 
 def sign_whitelist(ew3, wallet, auth_address, args):
@@ -129,14 +150,15 @@ def sign_whitelist(ew3, wallet, auth_address, args):
 
 
 def get_whitelist(ew3, wallet, auth_address, args):
-    whitelist = ew3.v0.get_current_client_whitelist(auth_address, is_draft=args.draft)
+    whitelist = ew3.v0.get_current_client_whitelist(auth_address, args.chain_id)
     if whitelist is not None:
-        print(whitelist)
-    else:
-        if args.draft:
-            print("No draft whitelist found. (Try without --draft flag?)")
-        else:
-            print("No published whitelist found. (Try with --draft flag?)")
+        active = whitelist.get('active')
+        draft = whitelist.get('draft')
+        chain_id = whitelist.get('chain_id')
+
+        print(f'For chain id {chain_id} found whitelists:\n')
+        print(f'Active: {active}')
+        print(f'Draft: {draft}\n')
 
 
 def getenv_or_bail(key):
@@ -221,6 +243,12 @@ if __name__ == "__main__":
     )
     parser_sign_armor.set_defaults(func=sign_armor_as_owner)
 
+    parser_get_existing_signatures = subparsers.add_parser(
+        "get-owner-signatures",
+        help="Get a list of as-of-yet accepted owner signatures"
+    )
+    parser_get_existing_signatures.set_defaults(func=get_owner_signatures)
+
     parser_enable_armor = subparsers.add_parser(
         "enable-armor", help="Enable the Armor contract as a module on the Safe"
     )
@@ -229,12 +257,26 @@ if __name__ == "__main__":
     parser_enable_armor.add_argument("--gas", type=int, default=500000)
     parser_enable_armor.set_defaults(func=enable_armor)
 
+    parser_submit_setup_safe_hash = subparsers.add_parser(
+        "submit_setup_safe", help="The hash of the tx where you set up the Safe and enabled armor"
+    )
+    parser_submit_setup_safe_hash.add_argument("--tx-hash", type=str, required=True)
+    parser_submit_setup_safe_hash.set_defaults(func=submit_setup_safe_hash)
+
     parser_create_whitelist = subparsers.add_parser(
         "create-whitelist",
         help="Create a new draft whitelist to be signed by Safe owners",
     )
     parser_create_whitelist.add_argument("--addresses", nargs="*", metavar="ADDR")
     parser_create_whitelist.set_defaults(func=create_whitelist)
+
+    parser_create_whitelist = subparsers.add_parser(
+        "append-whitelist",
+        help="Append to an existing whitelist draft",
+    )
+    parser_create_whitelist.add_argument("--addresses", nargs="*", metavar="ADDR", required=True)
+    parser_create_whitelist.add_argument("--chain-id", type=int, required=False, default=None)
+    parser_create_whitelist.set_defaults(func=append_whitelist)
 
     parser_sign_whitelist = subparsers.add_parser(
         "sign-whitelist", help="Sign a previously-created whitelist"
@@ -245,11 +287,7 @@ if __name__ == "__main__":
     parser_get_whitelist = subparsers.add_parser(
         "get-whitelist", help="Retrieve the contents of a whitelist"
     )
-    parser_get_whitelist.add_argument(
-        "--draft",
-        action="store_true",
-        help="Retrieve the draft whitelist instead of the published one",
-    )
+    parser_get_whitelist.add_argument("--chain-id", type=int, required=False, default=None)
     parser_get_whitelist.set_defaults(func=get_whitelist)
 
     parser_addresses = subparsers.add_parser(
@@ -307,7 +345,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    refresh_token = getenv_or_bail("EULITH_REFRESH_TOKEN")
+    eulith_token = getenv_or_bail("EULITH_TOKEN")
     auth_address = os.environ.get("EULITH_TRADING_ADDRESS")
     validate_addresses([auth_address])
 
@@ -345,18 +383,17 @@ if __name__ == "__main__":
     else:
         wallet = LocalSigner('0000000000000000000000000000000000000000000000000000000000000000')
 
-    ew3 = EulithWeb3(
+    with EulithWeb3(
         eulith_url=eulith_url,
-        eulith_refresh_token=refresh_token,
+        eulith_token=eulith_token,
         signing_middle_ware=construct_signing_middleware(wallet),
-    )
+    ) as ew3:
+        if network_type == POLY_NETWORK_TYPE:
+            from web3.middleware import geth_poa_middleware
+            ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    if network_type == POLY_NETWORK_TYPE:
-        from web3.middleware import geth_poa_middleware
-        ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
-
-    try:
-        args.func(ew3, wallet, auth_address, args)
-    except AttributeError:
-        print_banner()
-        print("Did not receive any commands. Try running ./run.sh -h for help")
+        try:
+            args.func(ew3, wallet, auth_address, args)
+        except AttributeError:
+            print_banner()
+            print("Did not receive any commands. Try running ./run.sh -h for help")

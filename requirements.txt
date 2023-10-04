@@ -91,7 +91,7 @@ eth-utils==2.2.1
     #   web3
 eulith-trezor==0.0.2
     # via eulith-web3
-eulith-web3==0.17.1
+eulith-web3==0.17.8
     # via -r requirements.in
 fireblocks-sdk==1.22.1
     # via eulith-web3

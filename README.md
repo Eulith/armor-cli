@@ -54,7 +54,7 @@ If you are using Ledger, Trezor, KMS, or a custodian like Fireblocks, you will s
 
 If you are using a plain text key for demo purposes, your `.env` file should look like this:
 ```shell
-EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli, poly, dev>
 EULITH_TRADING_ADDRESS=<0x123, the auto or manual trading key address (see below)>
 
@@ -65,7 +65,7 @@ PRIVATE_KEY=<plain text key goes here>
 
 If you are using an AWS KMS wallet (which we recommend for production), your `.env` file should look like this:
 ```shell
-EULITH_REFRESH_TOKEN=<you get this from us>
+EULITH_TOKEN=<you get this from us>
 EULITH_NETWORK_TYPE=<choices: mainnet, arb, goerli, poly, dev>
 EULITH_TRADING_ADDRESS=<0x123, the address of your trading key (see the table above if you're unsure)>
 
@@ -127,6 +127,11 @@ After verifying that you're using the correct wallet, run:
 ./run.sh sign-armor-as-owner
 ```
 
+NOTE: if you're not sure which owners you have already authorized, you can run:
+```shell
+./run.sh get-owner-signatures
+```
+
 For the next signature (for example, if you have run the above once but have a threshold of 2), 
 change the environment variables to the new wallet. Then repeat this step.
 
@@ -142,6 +147,12 @@ but all owners associated with the account.
 ./run.sh enable-armor --threshold X --owner-addresses 0x001 0x002 0x003
 ```
 
+NOTE: If you submit the enable armor transaction to the network yourself, you'll have to follow up and submit
+the hash to us so we can verify everything is setup correctly. You can do this by running:
+
+```shell
+./run.sh submit_setup_safe --tx-hash 0xtxhash......
+```
 ## Set-up Step 3
 
 ### Step 3.1: Create your first whitelist.
@@ -150,6 +161,11 @@ Create a draft client whitelist for trusted addresses. The addresses appended to
 ```shell
 # WALLET: deployer
 ./run.sh create-whitelist --addresses 0x001 0x002 0x003
+```
+
+You can also append to an existing draft with
+```shell
+./run.sh append-whitelist --addresses 0x004 0x005 --chain-id [optionally specify the chain id you want to append for]
 ```
 
 ### Step 3.2: Approve the whitelist with the owners of the account.
@@ -233,7 +249,7 @@ wallet = KmsSigner(client, "alias/MY_KMS_KEY")
 
 ew3 = EulithWeb3(
     eulith_url=EULITH_URL,
-    eulith_refresh_token=EULITH_REFRESH_TOKEN,
+    eulith_refresh_token=EULITH_TOKEN,
     signing_middle_ware=construct_signing_middleware(wallet),
 )
 
@@ -281,7 +297,7 @@ wallet = KmsSigner(client, "alias/MY_KMS_KEY")
 
 ew3 = EulithWeb3(
     eulith_url=EULITH_URL,
-    eulith_refresh_token=EULITH_REFRESH_TOKEN,
+    eulith_refresh_token=EULITH_TOKEN,
     signing_middle_ware=construct_signing_middleware(wallet),
 )
 
