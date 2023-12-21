@@ -24,8 +24,9 @@ MAINNET_NETWORK_TYPE = "mainnet"
 ARBITRUM_NETWORK_TYPE = "arb"
 GOERLI_NETWORK_TYPE = "goerli"
 POLY_NETWORK_TYPE = "poly"
+OPT_NETWORK_TYPE = "opt"
 DEV_NETWORK_TYPE = "dev"
-NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE, POLY_NETWORK_TYPE, DEV_NETWORK_TYPE]
+NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE, POLY_NETWORK_TYPE, OPT_NETWORK_TYPE, DEV_NETWORK_TYPE]
 
 
 def print_banner():
@@ -56,7 +57,7 @@ def deploy_armor(ew3, wallet, auth_address, args):
 
     armor_address, safe_address = ew3.v0.deploy_new_armor(
         ew3.to_checksum_address(auth_address),
-        {
+        override_tx_params={
             "from": wallet.address,
             "gas": args.gas,
         },
@@ -213,6 +214,8 @@ def get_eulith_url(network_type):
         return "https://eth-goerli.eulithrpc.com/v0"
     elif network_type == POLY_NETWORK_TYPE:
         return "https://poly-main.eulithrpc.com/v0"
+    elif network_type == OPT_NETWORK_TYPE:
+        return "https://opt-main.eulithrpc.com/v0"
     elif network_type == DEV_NETWORK_TYPE:
         return "http://localhost:7777/v0"
     else:
@@ -393,7 +396,9 @@ if __name__ == "__main__":
             ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
         try:
-            args.func(ew3, wallet, auth_address, args)
+            f = args.func
         except AttributeError:
             print_banner()
             print("Did not receive any commands. Try running ./run.sh -h for help")
+        else:
+            f(ew3, wallet, auth_address, args)
