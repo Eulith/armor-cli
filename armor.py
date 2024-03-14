@@ -359,7 +359,7 @@ if __name__ == "__main__":
             f"invalid network type {network_type!r}, expected one of: {network_types_string}"
         )
 
-    wallet_type = os.environ.get("EULITH_WALLET_TYPE")
+    wallet_type = getenv_or_bail("EULITH_WALLET_TYPE")
 
     if wallet_type and wallet_type not in WALLET_TYPES:
         wallet_types_string = ", ".join(WALLET_TYPES)
@@ -384,7 +384,7 @@ if __name__ == "__main__":
         private_key = getenv_or_bail("PRIVATE_KEY")
         wallet = LocalSigner(private_key)
     else:
-        wallet = LocalSigner('0000000000000000000000000000000000000000000000000000000000000000')
+        bail(f"unsupported wallet type {wallet_type!r}")
 
     with EulithWeb3(
         eulith_url=eulith_url,
