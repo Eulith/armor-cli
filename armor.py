@@ -24,8 +24,9 @@ MAINNET_NETWORK_TYPE = "mainnet"
 ARBITRUM_NETWORK_TYPE = "arb"
 GOERLI_NETWORK_TYPE = "goerli"
 POLY_NETWORK_TYPE = "poly"
+CELO_NETWORK_TYPE = "celo"
 DEV_NETWORK_TYPE = "dev"
-NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE, POLY_NETWORK_TYPE, DEV_NETWORK_TYPE]
+NETWORK_TYPES = [MAINNET_NETWORK_TYPE, ARBITRUM_NETWORK_TYPE, GOERLI_NETWORK_TYPE, POLY_NETWORK_TYPE, CELO_NETWORK_TYPE, DEV_NETWORK_TYPE]
 
 
 def print_banner():
@@ -213,6 +214,8 @@ def get_eulith_url(network_type):
         return "https://eth-goerli.eulithrpc.com/v0"
     elif network_type == POLY_NETWORK_TYPE:
         return "https://poly-main.eulithrpc.com/v0"
+    elif network_type == CELO_NETWORK_TYPE:
+        return "https://celo-main.eulithrpc.com/v0"
     elif network_type == DEV_NETWORK_TYPE:
         return "http://localhost:7777/v0"
     else:
