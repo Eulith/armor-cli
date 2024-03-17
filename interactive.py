@@ -188,17 +188,17 @@ def run_submit_owner_signature(network_id: str, eulith_token: str):
 
 
 def run_enable_armor(network_id: str, eulith_token: str):
-    trading_address = input(
-        "Which trading key are we enabling Armor for? : "
-    )
+    trading_address = input("Which trading key are we enabling Armor for? : ")
 
-    deployment_wallet = run_get_wallet('What kind of wallet would you like to use for DEPLOYMENT? : ')
-    print(f'Parsed deployment wallet address: {deployment_wallet.address}')
+    deployment_wallet = run_get_wallet(
+        "What kind of wallet would you like to use for DEPLOYMENT? : "
+    )
+    print(f"Parsed deployment wallet address: {deployment_wallet.address}")
 
     with EulithWeb3(
         f"https://{network_id}.eulithrpc.com/v0",
         eulith_token,
-        construct_signing_middleware(deployment_wallet)
+        construct_signing_middleware(deployment_wallet),
     ) as ew3:
         if network_id == "celo-main" or network_id == "poly-main":
             from web3.middleware import geth_poa_middleware
@@ -224,16 +224,19 @@ def run_enable_armor(network_id: str, eulith_token: str):
                 "You only need a sufficient threshold of owner signatures to proceed\n"
             )
         else:
-            print("Could not find any valid owner signatures. Cannot enable Armor with no owner signatures. Exiting.")
+            print(
+                "Could not find any valid owner signatures. Cannot enable Armor with no owner signatures. Exiting."
+            )
             exit(1)
 
-        more_owners = 'a'
+        more_owners = "a"
         full_owner_list = set(signatures_for_owners)
 
-        while more_owners == 'a':
+        while more_owners == "a":
             additional_owner_input = input(
-                "Please input additional non-signing owners, separated by commas (ex: 0x123,0x456,0x789) : ")
-            additional_owners = additional_owner_input.split(',')
+                "Please input additional non-signing owners, separated by commas (ex: 0x123,0x456,0x789) : "
+            )
+            additional_owners = additional_owner_input.split(",")
 
             for a in additional_owners:
                 try:
@@ -246,31 +249,45 @@ def run_enable_armor(network_id: str, eulith_token: str):
             for i, o in enumerate(full_owner_list):
                 print(f"Owner {i}: {o}")
 
-            more_owners = input_with_retry("\nTo continue, press ENTER. To add additional owners, press `a` : ", ['', 'a'])
+            more_owners = input_with_retry(
+                "\nTo continue, press ENTER. To add additional owners, press `a` : ",
+                ["", "a"],
+            )
 
-        threshold = int(input('\nPlease enter the threshold of owner signatures you would like (ex: 2) : '))
+        threshold = int(
+            input(
+                "\nPlease enter the threshold of owner signatures you would like (ex: 2) : "
+            )
+        )
 
-        has_ace_input = input_with_retry('Do you intend to run an ACE with this account? (y, n) : ', ['y', 'n'])
-        has_ace = has_ace_input == 'y'
+        has_ace_input = input_with_retry(
+            "Do you intend to run an ACE with this account? (y, n) : ", ["y", "n"]
+        )
+        has_ace = has_ace_input == "y"
 
-        print('\n\n~~ SUMMARY ~~')
-        print(f'Threshold:   {threshold}')
-        print(f'Has ACE:     {has_ace}')
-        print(f'Owners:      {full_owner_list}')
+        print("\n\n~~ SUMMARY ~~")
+        print(f"Threshold:   {threshold}")
+        print(f"Has ACE:     {has_ace}")
+        print(f"Owners:      {full_owner_list}")
 
-        input(f'\nTo continue, press ENTER...\n')
+        input(f"\nTo continue, press ENTER...\n")
 
-        print(f'Awaiting signature and sending transaction...')
+        print(f"Awaiting signature and sending transaction...")
 
-        status = ew3.v0.enable_armor(trading_address, threshold, list(full_owner_list), {
-            'gas': DEPLOYMENT_GAS_VALUES[network_id],
-            'from': deployment_wallet.address
-        })
+        status = ew3.v0.enable_armor(
+            trading_address,
+            threshold,
+            list(full_owner_list),
+            {
+                "gas": DEPLOYMENT_GAS_VALUES[network_id],
+                "from": deployment_wallet.address,
+            },
+        )
 
         if status:
-            print(f'~~ Armor successfully enabled! ~~')
+            print(f"~~ Armor successfully enabled! ~~")
         else:
-            print(f'Something went wrong!')
+            print(f"Something went wrong!")
 
 
 def main():
