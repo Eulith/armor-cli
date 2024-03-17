@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export $(cat .env | xargs)
-
 # Check if the first argument is "interactive"
 if [ "$1" = "interactive" ]; then
     source .venv/bin/activate && python interactive.py
