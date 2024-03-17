@@ -1,6 +1,7 @@
 """
 See the README file for instructions on using this CLI.
 """
+
 import argparse
 import os
 import sys
@@ -11,14 +12,25 @@ from eulith_web3.ledger import LedgerSigner
 from eulith_web3.signing import construct_signing_middleware, LocalSigner
 from eulith_web3.trezor import TrezorSigner
 
-from safe_utils import get_safe_balance, handle_start_transfer, handle_approve_hash, handle_execute_transfer
+from safe_utils import (
+    get_safe_balance,
+    handle_start_transfer,
+    handle_approve_hash,
+    handle_execute_transfer,
+)
 
 DUMMY_WALLET_TYPE = "dummy"
 KMS_WALLET_TYPE = "kms"
 LEDGER_WALLET_TYPE = "ledger"
 TREZOR_WALLET_TYPE = "trezor"
 PLAIN_TEXT_WALLET_TYPE = "text"
-WALLET_TYPES = [DUMMY_WALLET_TYPE, KMS_WALLET_TYPE, LEDGER_WALLET_TYPE, TREZOR_WALLET_TYPE, PLAIN_TEXT_WALLET_TYPE]
+WALLET_TYPES = [
+    DUMMY_WALLET_TYPE,
+    KMS_WALLET_TYPE,
+    LEDGER_WALLET_TYPE,
+    TREZOR_WALLET_TYPE,
+    PLAIN_TEXT_WALLET_TYPE,
+]
 
 MAINNET_NETWORK_TYPE = "mainnet"
 ARBITRUM_NETWORK_TYPE = "arb"
@@ -43,7 +55,8 @@ def print_banner():
            \:\ \/__/     \:\/:/  /     \:\  \   \:\__\       \/__/            /:/  /  
             \:\__\        \::/  /       \:\__\   \/__/                       /:/  /   
              \/__/         \/__/         \/__/                               \/__/    \n\n
-        """)
+        """
+    )
 
 
 def deploy_armor(ew3, wallet, auth_address, args):
@@ -56,8 +69,8 @@ def deploy_armor(ew3, wallet, auth_address, args):
         bail("operation aborted")
 
     armor_address, safe_address = ew3.v0.deploy_new_armor(
-        ew3.to_checksum_address(auth_address),
-        {
+        authorized_trading_address=ew3.to_checksum_address(auth_address),
+        override_tx_params={
             "from": wallet.address,
             "gas": args.gas,
         },
@@ -84,7 +97,7 @@ def get_owner_signatures(ew3, wallet, auth_address, args):
 
 
 def show_wallet_address(ew3, wallet, auth_address, args):
-    print(f'Your connected wallet address is {ew3.wallet_address}')
+    print(f"Your connected wallet address is {ew3.wallet_address}")
 
 
 def enable_armor(ew3, wallet, auth_address, args):
@@ -116,11 +129,13 @@ def enable_armor(ew3, wallet, auth_address, args):
 
 
 def submit_setup_safe_hash(ew3, wallet, auth_address, args):
-    status, r = ew3.eulith_service.submit_enable_safe_tx_hash(args.tx_hash, has_ace=False)
+    status, r = ew3.eulith_service.submit_enable_safe_tx_hash(
+        args.tx_hash, has_ace=False
+    )
     if status:
-        print('Successfully processed setup safe hash')
+        print("Successfully processed setup safe hash")
     else:
-        print(f'Unable to process setup safe hash, response came back {r}')
+        print(f"Unable to process setup safe hash, response came back {r}")
 
 
 def addresses(ew3, wallet, auth_address, args):
@@ -135,7 +150,9 @@ def create_whitelist(ew3, wallet, auth_address, args):
 
 
 def append_whitelist(ew3: EulithWeb3, wallet, auth_address, args):
-    list_id = ew3.v0.append_to_draft_client_whitelist(auth_address, args.addresses, args.chain_id)
+    list_id = ew3.v0.append_to_draft_client_whitelist(
+        auth_address, args.addresses, args.chain_id
+    )
     print(f"Successfully appended to whitelist with ID: {list_id}")
 
 
@@ -153,13 +170,13 @@ def sign_whitelist(ew3, wallet, auth_address, args):
 def get_whitelist(ew3, wallet, auth_address, args):
     whitelist = ew3.v0.get_current_client_whitelist(auth_address, args.chain_id)
     if whitelist is not None:
-        active = whitelist.get('active')
-        draft = whitelist.get('draft')
-        chain_id = whitelist.get('chain_id')
+        active = whitelist.get("active")
+        draft = whitelist.get("draft")
+        chain_id = whitelist.get("chain_id")
 
-        print(f'For chain id {chain_id} found whitelists:\n')
-        print(f'Active: {active}')
-        print(f'Draft: {draft}\n')
+        print(f"For chain id {chain_id} found whitelists:\n")
+        print(f"Active: {active}")
+        print(f"Draft: {draft}\n")
 
 
 def getenv_or_bail(key):
@@ -247,8 +264,7 @@ if __name__ == "__main__":
     parser_sign_armor.set_defaults(func=sign_armor_as_owner)
 
     parser_get_existing_signatures = subparsers.add_parser(
-        "get-owner-signatures",
-        help="Get a list of as-of-yet accepted owner signatures"
+        "get-owner-signatures", help="Get a list of as-of-yet accepted owner signatures"
     )
     parser_get_existing_signatures.set_defaults(func=get_owner_signatures)
 
@@ -261,7 +277,8 @@ if __name__ == "__main__":
     parser_enable_armor.set_defaults(func=enable_armor)
 
     parser_submit_setup_safe_hash = subparsers.add_parser(
-        "submit-setup-safe", help="The hash of the tx where you set up the Safe and enabled armor"
+        "submit-setup-safe",
+        help="The hash of the tx where you set up the Safe and enabled armor",
     )
     parser_submit_setup_safe_hash.add_argument("--tx-hash", type=str, required=True)
     parser_submit_setup_safe_hash.set_defaults(func=submit_setup_safe_hash)
@@ -277,8 +294,12 @@ if __name__ == "__main__":
         "append-whitelist",
         help="Append to an existing whitelist draft",
     )
-    parser_create_whitelist.add_argument("--addresses", nargs="*", metavar="ADDR", required=True)
-    parser_create_whitelist.add_argument("--chain-id", type=int, required=False, default=None)
+    parser_create_whitelist.add_argument(
+        "--addresses", nargs="*", metavar="ADDR", required=True
+    )
+    parser_create_whitelist.add_argument(
+        "--chain-id", type=int, required=False, default=None
+    )
     parser_create_whitelist.set_defaults(func=append_whitelist)
 
     parser_sign_whitelist = subparsers.add_parser(
@@ -290,7 +311,9 @@ if __name__ == "__main__":
     parser_get_whitelist = subparsers.add_parser(
         "get-whitelist", help="Retrieve the contents of a whitelist"
     )
-    parser_get_whitelist.add_argument("--chain-id", type=int, required=False, default=None)
+    parser_get_whitelist.add_argument(
+        "--chain-id", type=int, required=False, default=None
+    )
     parser_get_whitelist.set_defaults(func=get_whitelist)
 
     parser_addresses = subparsers.add_parser(
@@ -299,50 +322,83 @@ if __name__ == "__main__":
     parser_addresses.set_defaults(func=addresses)
 
     parser_get_safe_balance = subparsers.add_parser(
-        "safe-balance",
-        help="Get a specified ERC20 balance of your safe"
+        "safe-balance", help="Get a specified ERC20 balance of your safe"
     )
-    parser_get_safe_balance.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_get_safe_balance.add_argument("--token", type=str, help="the ticker symbol or address of the token", required=True)
+    parser_get_safe_balance.add_argument(
+        "--safe", type=str, help="the address of your safe", required=True
+    )
+    parser_get_safe_balance.add_argument(
+        "--token",
+        type=str,
+        help="the ticker symbol or address of the token",
+        required=True,
+    )
     parser_get_safe_balance.set_defaults(func=get_safe_balance)
 
     parser_get_transfer_hash = subparsers.add_parser(
         "start-safe-transfer",
-        help="Start a transfer (ERC20 tokens or native) from your safe to a specified wallet"
+        help="Start a transfer (ERC20 tokens or native) from your safe to a specified wallet",
     )
-    parser_get_transfer_hash.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_get_transfer_hash.add_argument("--token", type=str, help="the ticker symbol or address of the token (use the null address for native)", required=True)
-    parser_get_transfer_hash.add_argument("--dest", type=str, help="the address of the destination", required=True)
-    parser_get_transfer_hash.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
+    parser_get_transfer_hash.add_argument(
+        "--safe", type=str, help="the address of your safe", required=True
+    )
+    parser_get_transfer_hash.add_argument(
+        "--token",
+        type=str,
+        help="the ticker symbol or address of the token (use the null address for native)",
+        required=True,
+    )
+    parser_get_transfer_hash.add_argument(
+        "--dest", type=str, help="the address of the destination", required=True
+    )
+    parser_get_transfer_hash.add_argument(
+        "--amount", type=float, help="the amount you want to transfer", required=True
+    )
     parser_get_transfer_hash.set_defaults(func=handle_start_transfer)
 
     parser_execute_safe_transfer = subparsers.add_parser(
         "execute-safe-transfer",
-        help="Execute a transfer (ERC20 tokens or native) from your safe to a specified wallet"
+        help="Execute a transfer (ERC20 tokens or native) from your safe to a specified wallet",
     )
-    parser_execute_safe_transfer.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_execute_safe_transfer.add_argument("--token", type=str,
-                                          help="the ticker symbol or address of the token (use the null address for native)",
-                                          required=True)
-    parser_execute_safe_transfer.add_argument("--dest", type=str, help="the address of the destination", required=True)
-    parser_execute_safe_transfer.add_argument("--amount", type=float, help="the amount you want to transfer", required=True)
-    parser_execute_safe_transfer.add_argument("--owners", nargs='+', help="the owners you approved the transaction hash with",
-                                              required=True)
+    parser_execute_safe_transfer.add_argument(
+        "--safe", type=str, help="the address of your safe", required=True
+    )
+    parser_execute_safe_transfer.add_argument(
+        "--token",
+        type=str,
+        help="the ticker symbol or address of the token (use the null address for native)",
+        required=True,
+    )
+    parser_execute_safe_transfer.add_argument(
+        "--dest", type=str, help="the address of the destination", required=True
+    )
+    parser_execute_safe_transfer.add_argument(
+        "--amount", type=float, help="the amount you want to transfer", required=True
+    )
+    parser_execute_safe_transfer.add_argument(
+        "--owners",
+        nargs="+",
+        help="the owners you approved the transaction hash with",
+        required=True,
+    )
     parser_execute_safe_transfer.set_defaults(func=handle_execute_transfer)
 
     parser_approve_safe_hash = subparsers.add_parser(
-        "safe-approve-hash",
-        help="Approve tx hash for a Safe transaction"
+        "safe-approve-hash", help="Approve tx hash for a Safe transaction"
     )
-    parser_approve_safe_hash.add_argument("--safe", type=str, help="the address of your safe", required=True)
-    parser_approve_safe_hash.add_argument("--hash", type=str,
-                                          help="the hash of the tx you would like to approve",
-                                          required=True)
+    parser_approve_safe_hash.add_argument(
+        "--safe", type=str, help="the address of your safe", required=True
+    )
+    parser_approve_safe_hash.add_argument(
+        "--hash",
+        type=str,
+        help="the hash of the tx you would like to approve",
+        required=True,
+    )
     parser_approve_safe_hash.set_defaults(func=handle_approve_hash)
 
     parser_approve_safe_hash = subparsers.add_parser(
-        "show-wallet",
-        help="Show the address of the connected wallet"
+        "show-wallet", help="Show the address of the connected wallet"
     )
     parser_approve_safe_hash.set_defaults(func=show_wallet_address)
 
@@ -393,6 +449,7 @@ if __name__ == "__main__":
     ) as ew3:
         if network_type == POLY_NETWORK_TYPE:
             from web3.middleware import geth_poa_middleware
+
             ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
         try:
