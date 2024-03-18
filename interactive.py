@@ -8,7 +8,7 @@ from eulith_web3.trezor import TrezorSigner
 from armor import print_banner
 
 DEPLOYMENT_GAS_VALUES = {
-    "celo-main": 1000000,
+    "celo-main": 5000000,
     "eth-main": 1000000,
     "arb-main": 20000000,
     "opt-main": 20000000,
