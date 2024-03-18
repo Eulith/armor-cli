@@ -8,7 +8,7 @@ main() {
   source .venv/bin/activate
   echo "[eulith] Installing dependencies"
   pip install --upgrade pip
-  pip install -r requirements.txt
+  pip install eulith-web3
   echo "[eulith] Installed dependencies"
   echo
   echo
