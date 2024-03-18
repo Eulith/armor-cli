@@ -373,7 +373,7 @@ def main():
     print("(2) Submit owner signatures")
     print("(3) Enable armor for new Safe")
     print("(4) Enable armor for existing Safe")
-    action = int(input_with_retry(": ", ["1", "2", "3"]))
+    action = int(input_with_retry(": ", ["1", "2", "3", "4"]))
 
     if action == 1:
         run_deploy_new_armor(network_id, eulith_token)
