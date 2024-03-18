@@ -4,6 +4,7 @@ from eulith_web3.eulith_web3 import EulithWeb3
 from eulith_web3.ledger import LedgerSigner
 from eulith_web3.signing import LocalSigner, construct_signing_middleware
 from eulith_web3.trezor import TrezorSigner
+from eulith_web3.contract_bindings.safe.i_safe import ISafe
 
 from armor import print_banner
 
@@ -187,7 +188,7 @@ def run_submit_owner_signature(network_id: str, eulith_token: str):
                 print(f'Owner {i}: {e.get("owner_address")}')
 
 
-def run_enable_armor(network_id: str, eulith_token: str):
+def run_enable_armor_new_safe(network_id: str, eulith_token: str):
     trading_address = input("Which trading key are we enabling Armor for? : ")
 
     deployment_wallet = run_get_wallet(
@@ -274,10 +275,69 @@ def run_enable_armor(network_id: str, eulith_token: str):
 
         print(f"Awaiting signature and sending transaction...")
 
-        status = ew3.v0.enable_armor(
+        status = ew3.v0.enable_armor_for_new_safe(
             trading_address,
             threshold,
             list(full_owner_list),
+            {
+                "gas": DEPLOYMENT_GAS_VALUES[network_id],
+                "from": deployment_wallet.address,
+            },
+        )
+
+        if status:
+            print(f"~~ Armor successfully enabled! ~~")
+        else:
+            print(f"Something went wrong!")
+
+
+def run_enable_armor_existing_safe(network_id: str, eulith_token: str):
+    trading_address = input("Which trading key are we enabling Armor for? : ")
+
+    deployment_wallet = run_get_wallet(
+        "What kind of wallet would you like to use for DEPLOYMENT? : "
+    )
+    print(f"Parsed deployment wallet address: {deployment_wallet.address}")
+
+    with EulithWeb3(
+        f"https://{network_id}.eulithrpc.com/v0",
+        eulith_token,
+        construct_signing_middleware(deployment_wallet),
+    ) as ew3:
+        if network_id == "celo-main" or network_id == "poly-main":
+            from web3.middleware import geth_poa_middleware
+
+            ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+        existing_signatures = ew3.v0.get_accepted_enable_armor_signatures(
+            trading_address
+        )
+        signatures_for_owners = []
+
+        sa, aa = ew3.v0.get_armor_and_safe_addresses(trading_address)
+        safe = ISafe(ew3, sa)
+
+        threshold = safe.get_threshold()
+        owners = safe.get_owners()
+
+        if len(existing_signatures) > 0:
+            print("\n\nDiscovered existing owner signatures for this account: ")
+            for i, e in enumerate(existing_signatures):
+                print(f'Owner {i}: {e.get("owner_address")}')
+                signatures_for_owners.append(e.get("owner_address"))
+
+            print(
+                "\nIf you would like to provide signatures for more owners signatures on this account, "
+                "you'll need to re-run this script and select option (2)"
+            )
+
+        print(f'\nThe threshold for this safe is: {threshold}')
+        print(f'The owners are: {owners}\n')
+
+        input('Press ENTER to continue...')
+
+        status = ew3.v0.enable_armor_for_existing_safe(
+            trading_address,
             {
                 "gas": DEPLOYMENT_GAS_VALUES[network_id],
                 "from": deployment_wallet.address,
@@ -311,7 +371,8 @@ def main():
     print("\nWhat would you like to do?\n")
     print("(1) Deploy new armor")
     print("(2) Submit owner signatures")
-    print("(3) Enable armor\n")
+    print("(3) Enable armor for new Safe\n")
+    print("(4) Enable armor for existing Safe")
     action = int(input_with_retry(": ", ["1", "2", "3"]))
 
     if action == 1:
@@ -319,7 +380,9 @@ def main():
     elif action == 2:
         run_submit_owner_signature(network_id, eulith_token)
     elif action == 3:
-        run_enable_armor(network_id, eulith_token)
+        run_enable_armor_new_safe(network_id, eulith_token)
+    elif action == 4:
+        run_enable_armor_existing_safe(network_id, eulith_token)
 
 
 if __name__ == "__main__":
