@@ -371,7 +371,7 @@ def main():
     print("\nWhat would you like to do?\n")
     print("(1) Deploy new armor")
     print("(2) Submit owner signatures")
-    print("(3) Enable armor for new Safe\n")
+    print("(3) Enable armor for new Safe")
     print("(4) Enable armor for existing Safe")
     action = int(input_with_retry(": ", ["1", "2", "3"]))
 
