@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from eulith_web3.eulith_web3 import EulithWeb3
@@ -114,7 +115,8 @@ def run_deploy_new_armor(network_id: str, eulith_token: str):
                     "That does not appear to be a valid safe address. Please double check and start over"
                 )
                 exit(1)
-            print(f"\nProceeding with existing Safe deployment")
+            print(f"\nProceeding with existing Safe deployment...")
+            print(f'Awaiting signature from your wallet & communicating with chain. Please wait...')
 
         armor_address, safe_address = ew3.v0.deploy_new_armor(
             authorized_trading_address=ew3.to_checksum_address(auth_address),
@@ -131,7 +133,7 @@ def run_deploy_new_armor(network_id: str, eulith_token: str):
 
 def run_submit_owner_signature(network_id: str, eulith_token: str):
     trading_address = input(
-        "What trading key would you like to submit an owner signature for? : "
+        "\nWhat TRADING KEY would you like to submit an owner signature for? : "
     )
     with EulithWeb3(
         f"https://{network_id}.eulithrpc.com/v0",
@@ -192,7 +194,7 @@ def run_enable_armor_new_safe(network_id: str, eulith_token: str):
     trading_address = input("Which trading key are we enabling Armor for? : ")
 
     deployment_wallet = run_get_wallet(
-        "What kind of wallet would you like to use for DEPLOYMENT? : "
+        "\nWhat kind of wallet would you like to use for DEPLOYMENT? (ledger, trezor, text) : "
     )
     print(f"Parsed deployment wallet address: {deployment_wallet.address}")
 
@@ -295,7 +297,7 @@ def run_enable_armor_existing_safe(network_id: str, eulith_token: str):
     trading_address = input("Which trading key are we enabling Armor for? : ")
 
     deployment_wallet = run_get_wallet(
-        "What kind of wallet would you like to use for DEPLOYMENT? : "
+        "What kind of wallet would you like to use for DEPLOYMENT? (ledger, trezor, text) : "
     )
     print(f"Parsed deployment wallet address: {deployment_wallet.address}")
 
@@ -336,6 +338,8 @@ def run_enable_armor_existing_safe(network_id: str, eulith_token: str):
 
         input('Press ENTER to continue...')
 
+        print(f'Enabling new armor on existing safe: {sa}')
+
         status = ew3.v0.enable_armor_for_existing_safe(
             trading_address,
             {
@@ -360,7 +364,13 @@ def main():
 
     print_wallet_types()
 
-    eulith_token = input("\n\nPlease enter a valid Eulith API Token: ")
+    if not os.path.exists('eulith_token.txt'):
+        eulith_token = input("\n\nPlease enter a valid Eulith API Token: ")
+        with open('eulith_token.txt', 'w+') as file:
+            file.write(eulith_token)
+    else:
+        with open('eulith_token.txt', 'r') as file:
+            eulith_token = file.read()
 
     network = input_with_retry(
         "\nWhat network? (eth, celo, arb, opt, poly): ",
