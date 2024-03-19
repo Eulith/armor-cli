@@ -144,9 +144,13 @@ def run_submit_owner_signature(network_id: str, eulith_token: str):
 
             ew3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
+        print(f'Connected to Eulith services with chain id: {ew3.eth.chain_id}')
+
+        print(f'Fetching existing signatures...\n')
         existing_signatures = ew3.v0.get_accepted_enable_armor_signatures(
             trading_address
         )
+
         if len(existing_signatures) > 0:
             print("Discovered existing owner signatures for this account: ")
             for i, e in enumerate(existing_signatures):
