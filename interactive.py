@@ -314,8 +314,8 @@ def run_enable_armor_existing_safe(network_id: str, eulith_token: str):
         )
         signatures_for_owners = []
 
-        sa, aa = ew3.v0.get_armor_and_safe_addresses(trading_address)
-        safe = ISafe(ew3, sa)
+        aa, sa = ew3.v0.get_armor_and_safe_addresses(trading_address)
+        safe = ISafe(ew3, ew3.to_checksum_address(sa))
 
         threshold = safe.get_threshold()
         owners = safe.get_owners()
