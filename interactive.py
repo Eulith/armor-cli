@@ -130,6 +130,28 @@ def run_deploy_new_armor(network_id: str, eulith_token: str):
         print(f"New armor address: {armor_address}")
         print(f"New safe address:  {safe_address}")
 
+def run_submit_new_armor_hash(network_id: str, eulith_token: str):
+    existing_safe_input = input(f'\nIf you have an existing Safe address, enter it here (otherwise press ENTER) : ')
+    with EulithWeb3(
+            f"https://{network_id}.eulithrpc.com/v0",
+            eulith_token,
+    ) as ew3:
+        if '0x' in existing_safe_input:
+            existing_safe = ew3.to_checksum_address(existing_safe_input)
+        else:
+            existing_safe = None
+
+        transaction_hash = input(f'\nPlease enter the deployment transaction hash : ')
+
+        accepted = ew3.eulith_service.submit_new_armor_hash(
+            transaction_hash, existing_safe
+        )
+
+        if accepted:
+            print(f'\n~Transaction hash ACCEPTED!~')
+        else:
+            print(f'Something is wrong, transaction hash REJECTED')
+
 
 def run_submit_owner_signature(network_id: str, eulith_token: str):
     trading_address = input(
@@ -387,7 +409,8 @@ def main():
     print("(2) Submit owner signatures")
     print("(3) Enable armor for new Safe")
     print("(4) Enable armor for existing Safe")
-    action = int(input_with_retry(": ", ["1", "2", "3", "4"]))
+    print("(5) Submit new armor transaction hash")
+    action = int(input_with_retry(": ", ["1", "2", "3", "4", "5"]))
 
     if action == 1:
         run_deploy_new_armor(network_id, eulith_token)
@@ -397,6 +420,8 @@ def main():
         run_enable_armor_new_safe(network_id, eulith_token)
     elif action == 4:
         run_enable_armor_existing_safe(network_id, eulith_token)
+    elif action == 5:
+        run_submit_new_armor_hash(network_id, eulith_token)
 
 
 if __name__ == "__main__":
